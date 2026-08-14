@@ -13,6 +13,9 @@ Build an interactive web map application allowing users to select an edible mush
   - `docs/research/host-tree-pipeline-niedersachsen-bretagne.md` (Host tree extraction pipeline for DE/FR)
   - `docs/research/soilgrids-pipeline-niedersachsen-bretagne.md` (SoilGrids ingestion & tiling pipeline for DE/FR)
   - `docs/research/open-meteo-weather-pipeline.md` (Open-Meteo weather querying & fruiting triggers)
+  - `docs/research/scoring-algorithm-specification.md` (Suitability & Probability scoring specification)
+  - `docs/research/interactive-map-ui-specification.md` (Frontend map UI, trail basemaps & GPX export)
+  - `docs/research/field-identification-toxic-lookalikes.md` (Field identification keys, toxic lookalikes & GPX safety metadata)
 - **Target Test Regions**: Niedersachsen (Germany), Bretagne (France)
 - **Target Species**: *Boletus edulis*, *Cantharellus cibarius*
 
@@ -23,6 +26,9 @@ Build an interactive web map application allowing users to select an edible mush
 - [Host Tree Extraction Pipeline for Niedersachsen & Bretagne](file:///d:/William/Documents/git/shroom-room/.scratch/shroom-room/issues/01-host-tree-dataset-pipeline.md) — Selected ForestPaths 10m tree genus dataset on Zenodo (13341104); defined tile selection, host tree classification for Boletus and Cantharellus, 20m proximity dilation, and Python/GDAL COG pipeline.
 - [SoilGrids Ingestion & Tiling Strategy for Test Regions](file:///d:/William/Documents/git/shroom-room/.scratch/shroom-room/issues/02-soilgrids-ingestion-tiling.md) — Defined ISRIC WebDAV VRT `/vsicurl/` streaming pipeline for `phh2o` ($\div 10$), `clay`, `sand`, `soc`, reprojecting to EPSG:3035 and clipping to Niedersachsen & Bretagne for Suitability Map tiling.
 - [Open-Meteo Weather Querying & Fruiting Trigger Scoring](file:///d:/William/Documents/git/shroom-room/.scratch/shroom-room/issues/03-open-meteo-weather-integration.md) — Defined multi-coordinate viewport sampling ($8\times 8$ to $12\times 12$ grid), 14-day rainfall and cold-shock trigger math, and client-side IDW canvas overlay rendering.
+- [Suitability & Probability Algorithm Scoring Specification](file:///d:/William/Documents/git/shroom-room/.scratch/shroom-room/issues/04-suitability-probability-algorithm-spec.md) — Defined pluggable architecture (`ISuitabilityPipeline`, `IProbabilityPipeline`), with per-species suitability models and two probability strategies (`RainColdShockTriggerPipeline` for Porcini, `RainPulseTriggerPipeline` for Chanterelles).
+- [Interactive Map UI & Layer Switcher Harness](file:///d:/William/Documents/git/shroom-room/.scratch/shroom-room/issues/05-interactive-map-ui-harness.md) — Selected Vite + TypeScript + Leaflet/Canvas architecture with OpenTopoMap/CyclOSM trail layers, Red (Suitability) + Blue (Weather) = Purple (Prime Hotspot) visual paradigm, and GPX 1.1 waypoint route export.
+- [GPX Field Guide Metadata & Toxic Lookalike Safety Research](file:///d:/William/Documents/git/shroom-room/.scratch/shroom-room/issues/06-gpx-field-guide-toxic-lookalikes.md) — Embedded diagnostic field identification checklists, toxic lookalike warnings (*Rubroboletus satanas*, *Tylopilus felleus*, *Omphalotus*), and regional poison control hotlines directly into GPX waypoint `<desc>` tags for offline field safety.
 
 ## Not yet specified
 
