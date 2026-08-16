@@ -83,11 +83,45 @@ class ShroomRoomApp {
         },
         onWaypointAdd: (lat, lon) => {
           this.addWaypointAt(lat, lon);
+        },
+        onWeatherAvailabilityChange: (available) => {
+          this.setWeatherAvailability(available);
         }
       }
     );
 
     this.mapHarness.init('map', initialRegion);
+  }
+
+  private setWeatherAvailability(available: boolean) {
+    const toggleProb = document.getElementById('toggle-probability') as HTMLInputElement;
+    const toggleSuit = document.getElementById('toggle-suitability') as HTMLInputElement;
+    const sliderProb = document.getElementById('slider-prob-opacity') as HTMLInputElement;
+    const weatherRow = toggleProb?.closest('.layer-toggle-row');
+    const badge = document.getElementById('weather-status-badge');
+
+    if (toggleProb) {
+      if (!available) {
+        toggleProb.checked = false;
+        toggleProb.disabled = true;
+        if (sliderProb) sliderProb.disabled = true;
+        weatherRow?.classList.add('disabled');
+        if (badge) {
+          badge.textContent = 'Unavailable';
+          badge.classList.remove('hidden');
+        }
+        if (this.mapHarness) {
+          this.mapHarness.setLayerVisibility(toggleSuit?.checked ?? true, false);
+        }
+      } else {
+        toggleProb.disabled = false;
+        if (sliderProb) sliderProb.disabled = false;
+        weatherRow?.classList.remove('disabled');
+        if (badge) {
+          badge.classList.add('hidden');
+        }
+      }
+    }
   }
 
   private initWaypointPlanner() {
@@ -232,7 +266,8 @@ class ShroomRoomApp {
     const valProb = document.getElementById('val-prob-opacity') as HTMLElement;
 
     const onLayerChange = () => {
-      this.mapHarness.setLayerVisibility(toggleSuit.checked, toggleProb.checked);
+      const isProbActive = toggleProb.checked && !toggleProb.disabled;
+      this.mapHarness.setLayerVisibility(toggleSuit.checked, isProbActive);
       this.mapHarness.setLayerOpacity(Number(sliderSuit.value) / 100, Number(sliderProb.value) / 100);
       valSuit.textContent = `${sliderSuit.value}%`;
       valProb.textContent = `${sliderProb.value}%`;

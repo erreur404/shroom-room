@@ -59,12 +59,24 @@ app.get('/api/tiles/status', (req, res) => {
     } else {
       const activeJob = bakeWorker.getJobState(tid);
       if (activeJob) {
-        statuses[tid] = {
-          status: 'baking',
-          step: activeJob.step,
-          progressPct: activeJob.progressPct,
-          message: activeJob.message
-        };
+        if (activeJob.step === 'error') {
+          statuses[tid] = {
+            status: 'error',
+            step: activeJob.step,
+            progressPct: activeJob.progressPct,
+            message: activeJob.message,
+            error: activeJob.error
+          };
+        } else if (activeJob.step === 'completed') {
+          statuses[tid] = { status: 'baked' };
+        } else {
+          statuses[tid] = {
+            status: 'baking',
+            step: activeJob.step,
+            progressPct: activeJob.progressPct,
+            message: activeJob.message
+          };
+        }
       } else {
         statuses[tid] = { status: 'unbaked' };
       }

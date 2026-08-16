@@ -3,11 +3,13 @@ import { BasemapId, EnvironmentalInputs, ForagingWaypoint, RegionPreset, Scoring
 import { ScoringEngine } from '../scoring/pipelines';
 import { WeatherService } from '../services/weatherService';
 import { HabitatDataService } from '../services/habitatDataService';
+import { FogOfWarLayer } from './FogOfWarLayer';
 import { getTileId } from '../../server/tileConfig';
 
 export interface MapHarnessCallbacks {
   onCoordinateClick: (env: EnvironmentalInputs, score: ScoringResult) => void;
   onWaypointAdd: (lat: number, lon: number) => void;
+  onWeatherAvailabilityChange?: (available: boolean) => void;
 }
 
 export class MapHarness {
@@ -18,6 +20,9 @@ export class MapHarness {
   // Canvas Overlay Layer
   private overlayCanvas!: HTMLCanvasElement;
   private canvasLayer!: L.Layer;
+
+  // Fog of War Layer (Progressive Tile Baking)
+  private fogOfWarLayer!: FogOfWarLayer;
 
   // Waypoints & Route Layer
   private waypointLayerGroup!: L.LayerGroup;
@@ -75,7 +80,19 @@ export class MapHarness {
     // 3. Setup Custom Dual-Color Canvas Overlay Layer
     this.initCanvasOverlay();
 
-    // 4. Setup Waypoint and Route Layer
+    // 4. Setup Fog of War Layer (renders unbaked / baking tile states)
+    this.fogOfWarLayer = new FogOfWarLayer({
+      onBakeRequest: (tileId) => {
+        console.log(`[MapHarness] Bake requested for tile: ${tileId}`);
+      },
+      onTileLoaded: (tileData) => {
+        this.habitatService.setBakedTile(tileData);
+        this.renderCanvasOverlay();
+      }
+    });
+    this.fogOfWarLayer.init(this.map);
+
+    // 5. Setup Waypoint and Route Layer
     this.waypointLayerGroup = L.layerGroup().addTo(this.map);
     this.routePolyline = L.polyline([], {
       color: '#a855f7',
@@ -85,7 +102,7 @@ export class MapHarness {
       lineCap: 'round'
     }).addTo(this.map);
 
-    // 5. Event Listeners
+    // 6. Event Listeners
     this.habitatService.onTileUpdate(() => {
       this.renderCanvasOverlay();
     });
@@ -168,12 +185,23 @@ export class MapHarness {
     };
 
     // 1. Fetch / Update Weather for Viewport
-    this.weatherGrid = await this.weatherService.fetchWeatherForViewport(viewport, this.currentDateStr, 8);
+    try {
+      this.weatherGrid = await this.weatherService.fetchWeatherForViewport(viewport, this.currentDateStr, 8);
+      this.callbacks.onWeatherAvailabilityChange?.(true);
+    } catch (err) {
+      console.warn('[MapHarness] Weather data unavailable for viewport:', err);
+      this.weatherGrid = [];
+      this.isProbabilityVisible = false;
+      this.callbacks.onWeatherAvailabilityChange?.(false);
+    }
 
     // 2. Prefetch real baked habitat tiles from backend
     this.habitatService.prefetchViewport(viewport);
 
-    // 3. Render Canvas Overlay
+    // 3. Sync Fog of War unbaked/baking state
+    this.fogOfWarLayer?.syncViewportTiles();
+
+    // 4. Render Canvas Overlay
     this.renderCanvasOverlay();
   }
 

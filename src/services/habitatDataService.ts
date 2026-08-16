@@ -79,6 +79,7 @@ export const SPECIES_DETAILS: Record<SpeciesId, {
 };
 
 import { BakedTileData, getTileId, getTileIdsForViewport } from '../../server/tileConfig';
+import { API_BASE_URL } from '../config';
 
 export class HabitatDataService {
   private tileCache: Map<string, BakedTileData> = new Map();
@@ -101,7 +102,15 @@ export class HabitatDataService {
   }
 
   /**
-   * Fetches tile data from backend server (http://localhost:3001/api/tiles/:tileId)
+   * Ingests a baked tile directly (e.g. from FogOfWarLayer) and notifies subscribers
+   */
+  setBakedTile(data: BakedTileData) {
+    this.tileCache.set(data.tileId, data);
+    this.notifyUpdate();
+  }
+
+  /**
+   * Fetches tile data from backend server
    */
   async fetchTile(tileId: string): Promise<BakedTileData | null> {
     if (this.tileCache.has(tileId)) {
@@ -116,11 +125,11 @@ export class HabitatDataService {
 
     try {
       // 1. Check if tile is already baked
-      let res = await fetch(`http://localhost:3001/api/tiles/${tileId}`);
+      let res = await fetch(`${API_BASE_URL}/api/tiles/${tileId}`);
       
       if (res.status === 404) {
         // Trigger bake on the server
-        await fetch('http://localhost:3001/api/tiles/bake', {
+        await fetch(`${API_BASE_URL}/api/tiles/bake`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tileId })
@@ -128,7 +137,7 @@ export class HabitatDataService {
 
         // Poll once after a brief delay
         await new Promise(r => setTimeout(r, 1200));
-        res = await fetch(`http://localhost:3001/api/tiles/${tileId}`);
+        res = await fetch(`${API_BASE_URL}/api/tiles/${tileId}`);
       }
 
       if (res.ok) {

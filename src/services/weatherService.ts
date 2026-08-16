@@ -38,39 +38,65 @@ export class WeatherService {
       }
     }
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats.join(',')}&longitude=${lons.join(',')}&daily=precipitation_sum,soil_temperature_0_to_10cm_mean,soil_moisture_0_to_7cm_mean&past_days=14&timezone=auto`;
+    // Open-Meteo parameters:
+    // daily supports precipitation_sum, temperature_2m_mean
+    // hourly supports soil_temperature_0cm, soil_temperature_6cm
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats.join(',')}&longitude=${lons.join(',')}&daily=precipitation_sum,temperature_2m_mean&hourly=soil_temperature_0cm,soil_temperature_6cm&past_days=14&timezone=auto`;
     
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    const response = await fetch(url, { signal: controller.signal });
+    let response: Response;
+    try {
+      response = await fetch(url, { signal: controller.signal });
+    } catch (err: any) {
+      clearTimeout(timeout);
+      throw new Error(`Open-Meteo network error: ${err?.message || err}`);
+    }
     clearTimeout(timeout);
 
     if (!response.ok) {
-      throw new Error(`Open-Meteo HTTP ${response.status}`);
+      const errText = await response.text().catch(() => '');
+      throw new Error(`Open-Meteo HTTP ${response.status}: ${errText}`);
     }
 
     const data = await response.json();
+    if (data.error) {
+      throw new Error(`Open-Meteo error: ${data.reason || 'Unknown error'}`);
+    }
+
     const rawPoints = Array.isArray(data) ? data : [data];
 
     const results: WeatherGridPoint[] = rawPoints.map((ptData: any, index: number) => {
       const daily = ptData.daily || {};
+      const hourly = ptData.hourly || {};
       const precipArray: number[] = daily.precipitation_sum || [];
-      const soilTemps: number[] = daily.soil_temperature_0_to_10cm_mean || [];
+      const dailyTemps: number[] = daily.temperature_2m_mean || [];
+      const hourlySoil: number[] = hourly.soil_temperature_6cm || hourly.soil_temperature_0cm || [];
 
-      // Sum past 14 days of rain
-      const rain14DaysMm = precipArray.reduce((acc, v) => acc + (v || 0), 0);
+      // Sum past 14 days of rain (first 14 entries in precipitation_sum)
+      const pastPrecip = precipArray.slice(0, 14);
+      const rain14DaysMm = pastPrecip.reduce((acc, v) => acc + (v || 0), 0);
       
-      // Soil temperature calculations
-      const currentSoilTempC = soilTemps.length > 0 ? soilTemps[soilTemps.length - 1] : 14.5;
-      const pastWeekSlice = soilTemps.slice(0, Math.min(7, soilTemps.length));
-      const pastWeekSoilTempC = pastWeekSlice.length > 0 
-        ? pastWeekSlice.reduce((acc, v) => acc + (v || 0), 0) / pastWeekSlice.length 
-        : currentSoilTempC + 2.0;
+      // Soil temperature calculations (past 14 days of hourly data = 14 * 24 = 336 values)
+      let currentSoilTempC = 14.5;
+      let pastWeekSoilTempC = 16.5;
+
+      if (hourlySoil.length >= 14 * 24) {
+        const past14Slice = hourlySoil.slice(0, 14 * 24);
+        currentSoilTempC = past14Slice[past14Slice.length - 1] ?? 14.5;
+        const pastWeekSlice = hourlySoil.slice(0, 7 * 24);
+        pastWeekSoilTempC = pastWeekSlice.reduce((acc, v) => acc + (v || 0), 0) / Math.max(1, pastWeekSlice.length);
+      } else if (dailyTemps.length > 0) {
+        const past14Temps = dailyTemps.slice(0, 14);
+        currentSoilTempC = past14Temps[past14Temps.length - 1] ?? 14.5;
+        const pastWeekTemps = past14Temps.slice(0, Math.min(7, past14Temps.length));
+        pastWeekSoilTempC = pastWeekTemps.reduce((acc, v) => acc + (v || 0), 0) / Math.max(1, pastWeekTemps.length);
+      }
 
       return {
-        lat: lats[index],
-        lon: lons[index],
+        lat: lats[index] ?? 0,
+        lon: lons[index] ?? 0,
         rain14DaysMm: Math.round(rain14DaysMm * 10) / 10,
         currentSoilTempC: Math.round(currentSoilTempC * 10) / 10,
         pastWeekSoilTempC: Math.round(pastWeekSoilTempC * 10) / 10,

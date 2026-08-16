@@ -1,22 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shroom Room — Interactive Mushroom Habitat & Fruiting Map</title>
-  <meta name="description" content="Predict edible mushroom habitat suitability and dynamic fruiting probability with topographic trail maps, weather triggers, and GPX route exports across Niedersachsen and Bretagne." />
-  
+  <meta name="description"
+    content="Predict edible mushroom habitat suitability and dynamic fruiting probability with topographic trail maps, weather triggers, and GPX route exports across Niedersachsen and Bretagne." />
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  
-  <script type="module" crossorigin src="/assets/index-Bq2I6LOq.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-C87DiqbS.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <script type="module" crossorigin src="/assets/index-CgKbjxmv.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BOVrRcBA.css">
 </head>
+
 <body>
   <div id="app">
     <!-- Header Controls -->
@@ -110,20 +116,13 @@
             </div>
 
             <div class="layer-toggle-row">
-              <label class="layer-checkbox-label">
+              <label class="layer-checkbox-label" id="label-weather-layer">
                 <input type="checkbox" id="toggle-probability" checked />
                 <span class="color-badge badge-blue"></span>
                 <span class="layer-title">Weather Trigger (Blue)</span>
+                <span id="weather-status-badge" class="badge-status-pill hidden">Unavailable</span>
               </label>
               <span class="layer-desc">14-day rainfall pulse & soil temp</span>
-            </div>
-
-            <div class="synthesis-badge">
-              <span class="color-badge badge-purple"></span>
-              <div class="synthesis-text">
-                <strong>PURPLE = PRIME FORAGING TARGET</strong>
-                <p>Overlap of ideal soil/trees + active weather trigger</p>
-              </div>
             </div>
 
             <div class="layer-sliders">
@@ -229,7 +228,8 @@
         <div class="waypoints-list" id="waypoints-list">
           <div class="empty-state">
             <p>No waypoints placed yet.</p>
-            <span>Click on the map or select hotspots to build your foraging trail before heading into the forest.</span>
+            <span>Click on the map or select hotspots to build your foraging trail before heading into the
+              forest.</span>
           </div>
         </div>
 
@@ -260,4 +260,5 @@
 
   <!-- Main JavaScript Entry Point -->
 </body>
+
 </html>

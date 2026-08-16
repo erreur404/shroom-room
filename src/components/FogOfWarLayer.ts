@@ -1,13 +1,15 @@
 import L from 'leaflet';
 import { BakedTileData, getTileIdsForViewport, parseTileBounds } from '../../server/tileConfig';
+import { API_BASE_URL } from '../config';
 
 export interface TileStatusInfo {
-  status: 'unbaked' | 'baking' | 'baked';
+  status: 'unbaked' | 'baking' | 'baked' | 'error';
   step?: string;
   progressPct?: number;
   message?: string;
   forestCoveragePct?: number;
   isEmpty?: boolean;
+  error?: string;
 }
 
 export interface FogOfWarCallbacks {
@@ -55,7 +57,7 @@ export class FogOfWarLayer {
     const bboxStr = `${viewport.south},${viewport.west},${viewport.north},${viewport.east}`;
 
     try {
-      const res = await fetch(`http://localhost:3001/api/tiles/status?bbox=${bboxStr}`);
+      const res = await fetch(`${API_BASE_URL}/api/tiles/status?bbox=${bboxStr}`);
       if (!res.ok) return;
 
       const data = await res.json();
@@ -78,7 +80,7 @@ export class FogOfWarLayer {
 
   private async fetchBakedTile(tileId: string) {
     try {
-      const res = await fetch(`http://localhost:3001/api/tiles/${tileId}`);
+      const res = await fetch(`${API_BASE_URL}/api/tiles/${tileId}`);
       if (!res.ok) return;
       const tileData: BakedTileData = await res.json();
       this.loadedTileData.set(tileId, tileData);
@@ -118,21 +120,22 @@ export class FogOfWarLayer {
         [tb.north, tb.east]
       ];
 
-      if (statusInfo.status === 'unbaked') {
+      if (statusInfo.status === 'unbaked' || statusInfo.status === 'error') {
         // Render Translucent Frosted White Fog
+        const isErr = statusInfo.status === 'error';
         const fogPolygon = L.rectangle(latLngBounds, {
-          color: 'rgba(255, 255, 255, 0.45)',
+          color: isErr ? 'rgba(239, 68, 68, 0.6)' : 'rgba(255, 255, 255, 0.45)',
           weight: 1.5,
           dashArray: '4, 6',
-          fillColor: '#f1f5f9',
-          fillOpacity: 0.42,
-          className: 'fog-unbaked-tile'
+          fillColor: isErr ? '#fee2e2' : '#0f172a',
+          fillOpacity: 0.45,
+          className: isErr ? 'fog-error-tile' : 'fog-unbaked-tile'
         });
 
         fogPolygon.bindTooltip(
           `<div style="font-family: inherit; font-size: 12px; text-align: center;">
-            <strong>☁️ Unbaked Habitat Data</strong><br/>
-            <span style="color:#7c3aed; font-weight:700;">Click to Bake Tile</span>
+            <strong>${isErr ? '⚠️ Bake Interrupted' : '☁️ Unbaked Habitat Data'}</strong><br/>
+            <span style="color:#a855f7; font-weight:700;">Click to Bake Tile</span>
           </div>`,
           { sticky: true }
         );
@@ -178,7 +181,7 @@ export class FogOfWarLayer {
     this.renderFogTiles();
 
     try {
-      const res = await fetch('http://localhost:3001/api/tiles/bake', {
+      const res = await fetch(`${API_BASE_URL}/api/tiles/bake`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tileId })

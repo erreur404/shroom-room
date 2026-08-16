@@ -426,6 +426,40 @@ input[type="range"] {
   cursor: pointer;
 }
 
+.layer-toggle-row.disabled,
+.layer-checkbox-label.disabled,
+.layer-checkbox-label:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.layer-checkbox-label input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.slider-group:has(input:disabled) {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.slider-group input[type="range"]:disabled {
+  cursor: not-allowed;
+}
+
+.badge-status-pill {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  margin-left: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 /* ==========================================================================
    Telemetry Inspection HUD
    ========================================================================== */
@@ -812,3 +846,73 @@ input[type="range"] {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes pulse-bake {
+  0%, 100% {
+    fill-opacity: 0.35;
+    stroke-opacity: 0.7;
+  }
+  50% {
+    fill-opacity: 0.65;
+    stroke-opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   Fog of War & Progressive Baking Overlays
+   ========================================================================== */
+.fog-unbaked-tile {
+  fill: #0b0f19;
+  fill-opacity: 0.52;
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fog-unbaked-tile:hover {
+  fill: #1e1b4b;
+  fill-opacity: 0.68;
+  stroke: #a855f7;
+  stroke-width: 2.5;
+}
+
+.fog-baking-tile {
+  fill: #581c87;
+  fill-opacity: 0.45;
+  stroke: #c084fc;
+  stroke-width: 2;
+  animation: pulse-bake 2s infinite ease-in-out;
+}
+
+.fog-error-tile {
+  fill: #450a0a;
+  fill-opacity: 0.45;
+  stroke: #f87171;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+  cursor: pointer;
+}
+
+.fog-error-tile:hover {
+  stroke: #ef4444;
+  stroke-width: 2.5;
+  fill-opacity: 0.6;
+}
+
+.baking-status-tooltip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(168, 85, 247, 0.6) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 16px rgba(168, 85, 247, 0.4) !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  pointer-events: none;
+}
+
+.baking-status-tooltip::before {
+  border-top-color: rgba(15, 23, 42, 0.95) !important;
+}
+
