@@ -1,0 +1,212 @@
+import { BakedCell, BakedTileData, parseTileBounds } from './tileConfig';
+import { LanduseService } from './landuseService';
+import { SoilgridsService } from './soilgridsService';
+import { ForestpathsService } from './forestpathsService';
+import { TileStore } from './tileStore';
+import { ScoringEngine } from '../src/scoring/pipelines';
+import { EnvironmentalInputs } from '../src/types';
+
+export type BakeStep =
+  | 'idle'
+  | 'landuse_check'
+  | 'downloading_trees'
+  | 'downloading_soil'
+  | 'computing_suitability'
+  | 'completed'
+  | 'error';
+
+export interface BakeJobState {
+  tileId: string;
+  step: BakeStep;
+  progressPct: number;
+  message: string;
+  startedAt: number;
+  completedAt?: number;
+  error?: string;
+}
+
+export class BakeWorker {
+  private activeJobs: Map<string, BakeJobState> = new Map();
+  private scoringEngine = new ScoringEngine();
+
+  constructor(
+    private landuseService: LanduseService,
+    private soilgridsService: SoilgridsService,
+    private forestpathsService: ForestpathsService,
+    private tileStore: TileStore
+  ) {}
+
+  getJobState(tileId: string): BakeJobState | null {
+    return this.activeJobs.get(tileId) || null;
+  }
+
+  getAllActiveJobs(): BakeJobState[] {
+    return Array.from(this.activeJobs.values());
+  }
+
+  async bakeTile(tileId: string): Promise<BakedTileData> {
+    // 1. Check if already baked on disk
+    const existing = this.tileStore.loadTile(tileId);
+    if (existing) {
+      return existing;
+    }
+
+    // 2. Check if a job is already actively baking this tile
+    const existingJob = this.activeJobs.get(tileId);
+    if (existingJob && existingJob.step !== 'error' && existingJob.step !== 'completed') {
+      // Wait for existing job to finish
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const state = this.activeJobs.get(tileId);
+          if (state?.step === 'completed') {
+            clearInterval(interval);
+            const data = this.tileStore.loadTile(tileId);
+            if (data) resolve(data);
+            else reject(new Error('Tile completed but not found on disk'));
+          } else if (state?.step === 'error') {
+            clearInterval(interval);
+            reject(new Error(state.error || 'Bake job failed'));
+          }
+        }, 150);
+      });
+    }
+
+    // 3. Initialize new Bake Job
+    const job: BakeJobState = {
+      tileId,
+      step: 'landuse_check',
+      progressPct: 10,
+      message: 'Checking OpenStreetMap forest landcover...',
+      startedAt: Date.now()
+    };
+    this.activeJobs.set(tileId, job);
+
+    const bounds = parseTileBounds(tileId);
+
+    try {
+      // ─── STEP 1: Tier-1 Landuse Gating ──────────────────────────────────
+      const landuse = await this.landuseService.checkLanduse(tileId, bounds);
+
+      if (!landuse.isForest || landuse.forestCoveragePct === 0) {
+        // Zero forest detected (e.g. Braunschweig city center, water, farms)
+        // Instant tombstone write in < 100ms
+        job.step = 'completed';
+        job.progressPct = 100;
+        job.message = 'Non-forest area (0% forest coverage). Saved.';
+        job.completedAt = Date.now();
+
+        const emptyTile = this.tileStore.createEmptyTile(tileId);
+        return emptyTile;
+      }
+
+      // ─── STEP 2 & 3: Sample 250m Cells for Trees & Soil ─────────────────
+      job.step = 'downloading_trees';
+      job.progressPct = 35;
+      job.message = `Found ${landuse.forestCoveragePct}% forest. Extracting ForestPaths tree genus...`;
+
+      // 250m cell grid dimensions for 0.05° tile
+      const rows = 22;
+      const cols = 14;
+      const dLat = (bounds.north - bounds.south) / rows;
+      const dLon = (bounds.east - bounds.west) / cols;
+
+      const cells: BakedCell[] = [];
+
+      job.step = 'downloading_soil';
+      job.progressPct = 60;
+      job.message = `Ingesting SoilGrids chemistry (pH, clay, sand, SOC)...`;
+
+      // Query soil properties at representative coordinates
+      const soilProps = await this.soilgridsService.getSoilProperties(
+        (bounds.south + bounds.north) / 2,
+        (bounds.west + bounds.east) / 2
+      );
+
+      // ─── STEP 4: Evaluate Suitability Matrices ───────────────────────────
+      job.step = 'computing_suitability';
+      job.progressPct = 85;
+      job.message = `Computing Boletus & Chanterelle suitability models...`;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cellLat = Number((bounds.north - r * dLat).toFixed(4));
+          const cellLon = Number((bounds.west + c * dLon).toFixed(4));
+
+          const isInsideForest = landuse.isForest;
+
+          const treeData = await this.forestpathsService.extractTreeGenusForCell(
+            cellLat,
+            cellLon,
+            isInsideForest,
+            bounds
+          );
+
+          // Construct EnvironmentalInputs for scoring engine
+          const envInputs: EnvironmentalInputs = {
+            lat: cellLat,
+            lon: cellLon,
+            soilPH: soilProps.soilPH,
+            clayPct: soilProps.clayPct,
+            sandPct: soilProps.sandPct,
+            socDgKg: soilProps.socDgKg,
+            hostTreeGenus: treeData.dominantGenus,
+            distToHostMeters: treeData.distToHostMeters,
+            elevationMeters: 250,
+            aspectDegrees: 180,
+            rain14DaysMm: 35,
+            currentSoilTempC: 13,
+            pastWeekSoilTempC: 16,
+            date: new Date().toISOString().split('T')[0]
+          };
+
+          const boletusScore = this.scoringEngine.evaluate('boletus', envInputs);
+          const chanterelleScore = this.scoringEngine.evaluate('cantharellus', envInputs);
+
+          cells.push({
+            row: r,
+            col: c,
+            lat: cellLat,
+            lon: cellLon,
+            treeGenus: treeData.dominantGenus,
+            distToHostMeters: treeData.distToHostMeters,
+            soilPH: soilProps.soilPH,
+            clayPct: soilProps.clayPct,
+            sandPct: soilProps.sandPct,
+            socDgKg: soilProps.socDgKg,
+            isForest: isInsideForest,
+            boletusSuitability: Math.round(boletusScore.suitabilityScore * 100),
+            chanterelleSuitability: Math.round(chanterelleScore.suitabilityScore * 100)
+          });
+        }
+      }
+
+      // ─── STEP 5: Persist Baked Tile to Disk ──────────────────────────────
+      const bakedTile: BakedTileData = {
+        tileId,
+        bounds,
+        baseCellMeters: 250,
+        rows,
+        cols,
+        forestCoveragePct: landuse.forestCoveragePct,
+        isEmpty: false,
+        cells,
+        bakedAt: new Date().toISOString()
+      };
+
+      this.tileStore.saveTile(bakedTile);
+
+      job.step = 'completed';
+      job.progressPct = 100;
+      job.message = `Successfully baked ${cells.length} cells. Saved to disk.`;
+      job.completedAt = Date.now();
+
+      return bakedTile;
+
+    } catch (err: any) {
+      console.error(`[BakeWorker] Failed baking tile ${tileId}`, err);
+      job.step = 'error';
+      job.error = err?.message || 'Bake worker execution error';
+      throw err;
+    }
+  }
+}

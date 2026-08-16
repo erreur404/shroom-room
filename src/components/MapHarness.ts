@@ -3,6 +3,7 @@ import { BasemapId, EnvironmentalInputs, ForagingWaypoint, RegionPreset, Scoring
 import { ScoringEngine } from '../scoring/pipelines';
 import { WeatherService } from '../services/weatherService';
 import { HabitatDataService } from '../services/habitatDataService';
+import { getTileId } from '../../server/tileConfig';
 
 export interface MapHarnessCallbacks {
   onCoordinateClick: (env: EnvironmentalInputs, score: ScoringResult) => void;
@@ -38,7 +39,7 @@ export class MapHarness {
     private weatherService: WeatherService,
     private habitatService: HabitatDataService,
     private callbacks: MapHarnessCallbacks
-  ) {}
+  ) { }
 
   init(containerId: string, initialRegion: RegionPreset) {
     // 1. Initialize Leaflet Map
@@ -85,6 +86,10 @@ export class MapHarness {
     }).addTo(this.map);
 
     // 5. Event Listeners
+    this.habitatService.onTileUpdate(() => {
+      this.renderCanvasOverlay();
+    });
+
     this.map.on('moveend', () => this.updateViewportDataAndRender());
     this.map.on('zoomend', () => this.updateViewportDataAndRender());
 
@@ -93,12 +98,22 @@ export class MapHarness {
       const lon = e.latlng.lng;
 
       const env = this.habitatService.getEnvironmentalInputs(lat, lon, this.currentDateStr, this.weatherGrid, this.weatherService);
-      const score = this.scoringEngine.evaluate(this.currentSpeciesId, env);
-
-      if (this.isWaypointMode) {
-        this.callbacks.onWaypointAdd(lat, lon);
+      if (env) {
+        const score = this.scoringEngine.evaluate(this.currentSpeciesId, env);
+        if (this.isWaypointMode) {
+          this.callbacks.onWaypointAdd(lat, lon);
+        } else {
+          this.callbacks.onCoordinateClick(env, score);
+        }
       } else {
-        this.callbacks.onCoordinateClick(env, score);
+        // Fetch from backend tile baker
+        this.habitatService.fetchTile(getTileId(lat, lon)).then(() => {
+          const freshEnv = this.habitatService.getEnvironmentalInputs(lat, lon, this.currentDateStr, this.weatherGrid, this.weatherService);
+          if (freshEnv) {
+            const score = this.scoringEngine.evaluate(this.currentSpeciesId, freshEnv);
+            this.callbacks.onCoordinateClick(freshEnv, score);
+          }
+        });
       }
     });
 
@@ -155,14 +170,17 @@ export class MapHarness {
     // 1. Fetch / Update Weather for Viewport
     this.weatherGrid = await this.weatherService.fetchWeatherForViewport(viewport, this.currentDateStr, 8);
 
-    // 2. Render Canvas Overlay
+    // 2. Prefetch real baked habitat tiles from backend
+    this.habitatService.prefetchViewport(viewport);
+
+    // 3. Render Canvas Overlay
     this.renderCanvasOverlay();
   }
 
   /**
-   * Dual Color-Blending Canvas Shader
-   * - Red Canvas Layer: Static Suitability (0.30 - 0.70)
-   * - Blue Canvas Layer: Dynamic Weather Trigger (0.30 - 0.70)
+   * Ground-Truth Dual Color-Blending Canvas Shader
+   * - Red Canvas: Ground-Truth Baked Suitability (0.30 - 0.70)
+   * - Blue Canvas: Dynamic Weather Trigger (0.30 - 0.70)
    * - Natural Overlap: Renders Glowing Purple Hotspots
    */
   private renderCanvasOverlay() {
@@ -179,13 +197,12 @@ export class MapHarness {
       return;
     }
 
-    // Position canvas relative to map top-left
     const mapOrigin = this.map.containerPointToLayerPoint([0, 0]);
     L.DomUtil.setPosition(this.overlayCanvas, mapOrigin);
 
     const bounds = this.map.getBounds();
-    const gridCols = 40;
-    const gridRows = 30;
+    const gridCols = 36;
+    const gridRows = 26;
     const cellW = width / gridCols;
     const cellH = height / gridRows;
 
@@ -200,6 +217,8 @@ export class MapHarness {
         const lon = west + (c / gridCols) * (east - west);
 
         const env = this.habitatService.getEnvironmentalInputs(lat, lon, this.currentDateStr, this.weatherGrid, this.weatherService);
+        if (!env) continue;
+
         const scoring = this.scoringEngine.evaluate(this.currentSpeciesId, env);
 
         const suitScore = scoring.suitabilityScore;
@@ -215,11 +234,10 @@ export class MapHarness {
           ctx.fillRect(x, y, cellW + 1, cellH + 1);
         }
 
-        // 2. Draw Weather Trigger (Blue) with Additive/Multiply blending
-        if (this.isProbabilityVisible && weatherScore > 0.15 && scoring.isSeasonActive) {
+        // 2. Draw Weather Trigger (Blue) with Additive/Multiply blending (ONLY when in season)
+        const isSeason = this.scoringEngine.isSeasonActive(this.currentSpeciesId, this.currentDateStr);
+        if (this.isProbabilityVisible && weatherScore > 0.15 && isSeason) {
           const alpha = Math.min(0.85, (0.25 + 0.50 * weatherScore) * (this.probabilityOpacity / 0.50));
-          
-          // Use 'screen' or 'lighter' blend to create vibrant purple in overlap
           ctx.save();
           ctx.globalCompositeOperation = 'lighter';
           ctx.fillStyle = `rgba(59, 130, 246, ${alpha.toFixed(3)})`;

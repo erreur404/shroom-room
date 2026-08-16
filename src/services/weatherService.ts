@@ -38,91 +38,48 @@ export class WeatherService {
       }
     }
 
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats.join(',')}&longitude=${lons.join(',')}&daily=precipitation_sum,soil_temperature_0_to_10cm_mean,soil_moisture_0_to_7cm_mean&past_days=14&timezone=auto`;
-      
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats.join(',')}&longitude=${lons.join(',')}&daily=precipitation_sum,soil_temperature_0_to_10cm_mean,soil_moisture_0_to_7cm_mean&past_days=14&timezone=auto`;
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout
 
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
 
-      if (!response.ok) {
-        throw new Error(`Open-Meteo HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      const rawPoints = Array.isArray(data) ? data : [data];
-
-      const results: WeatherGridPoint[] = rawPoints.map((ptData: any, index: number) => {
-        const daily = ptData.daily || {};
-        const precipArray: number[] = daily.precipitation_sum || [];
-        const soilTemps: number[] = daily.soil_temperature_0_to_10cm_mean || [];
-
-        // Sum past 14 days of rain
-        const rain14DaysMm = precipArray.reduce((acc, v) => acc + (v || 0), 0);
-        
-        // Soil temperature calculations
-        const currentSoilTempC = soilTemps.length > 0 ? soilTemps[soilTemps.length - 1] : 14.5;
-        const pastWeekSlice = soilTemps.slice(0, Math.min(7, soilTemps.length));
-        const pastWeekSoilTempC = pastWeekSlice.length > 0 
-          ? pastWeekSlice.reduce((acc, v) => acc + (v || 0), 0) / pastWeekSlice.length 
-          : currentSoilTempC + 2.0;
-
-        return {
-          lat: lats[index],
-          lon: lons[index],
-          rain14DaysMm: Math.round(rain14DaysMm * 10) / 10,
-          currentSoilTempC: Math.round(currentSoilTempC * 10) / 10,
-          pastWeekSoilTempC: Math.round(pastWeekSoilTempC * 10) / 10,
-          weatherMultiplier: 1.0
-        };
-      });
-
-      this.cache.set(cacheKey, { data: results, timestamp: Date.now() });
-      return results;
-
-    } catch (err) {
-      console.warn('[WeatherService] Live Open-Meteo query failed or timed out. Falling back to synthetic regional weather model.', err);
-      // Fallback: Generate realistic high-fidelity weather patterns based on geography & elevation
-      const fallbackResults = this.generateSyntheticWeatherGrid(lats, lons, dateStr);
-      this.cache.set(cacheKey, { data: fallbackResults, timestamp: Date.now() });
-      return fallbackResults;
+    if (!response.ok) {
+      throw new Error(`Open-Meteo HTTP ${response.status}`);
     }
-  }
 
-  /**
-   * Generates realistic synthetic weather data if offline or during date simulations
-   */
-  private generateSyntheticWeatherGrid(lats: number[], lons: number[], dateStr: string): WeatherGridPoint[] {
-    const d = new Date(dateStr);
-    const month = d.getMonth() + 1; // 1-12
-    const isAutumn = month >= 8 && month <= 11;
+    const data = await response.json();
+    const rawPoints = Array.isArray(data) ? data : [data];
 
-    return lats.map((lat, i) => {
-      const lon = lons[i];
-      // Spatial noise function based on coords
-      const noise = Math.sin(lat * 12.5) * Math.cos(lon * 12.5);
+    const results: WeatherGridPoint[] = rawPoints.map((ptData: any, index: number) => {
+      const daily = ptData.daily || {};
+      const precipArray: number[] = daily.precipitation_sum || [];
+      const soilTemps: number[] = daily.soil_temperature_0_to_10cm_mean || [];
+
+      // Sum past 14 days of rain
+      const rain14DaysMm = precipArray.reduce((acc, v) => acc + (v || 0), 0);
       
-      // Autumn rain flush simulation (35mm - 58mm) vs dry season (10mm - 25mm)
-      const baseRain = isAutumn ? 38.0 : 18.0;
-      const rain14DaysMm = Math.max(5.0, baseRain + noise * 22.0);
-
-      // Soil temperature: 11°C - 16°C in autumn with 2.5°C cold shock
-      const baseTemp = isAutumn ? 13.0 : 19.0;
-      const currentSoilTempC = baseTemp + (lat - 50.0) * -0.5 + noise * 2.0;
-      const tempDrop = isAutumn ? 3.0 + noise * 1.5 : 0.8;
-      const pastWeekSoilTempC = currentSoilTempC + Math.max(0, tempDrop);
+      // Soil temperature calculations
+      const currentSoilTempC = soilTemps.length > 0 ? soilTemps[soilTemps.length - 1] : 14.5;
+      const pastWeekSlice = soilTemps.slice(0, Math.min(7, soilTemps.length));
+      const pastWeekSoilTempC = pastWeekSlice.length > 0 
+        ? pastWeekSlice.reduce((acc, v) => acc + (v || 0), 0) / pastWeekSlice.length 
+        : currentSoilTempC + 2.0;
 
       return {
-        lat,
-        lon,
+        lat: lats[index],
+        lon: lons[index],
         rain14DaysMm: Math.round(rain14DaysMm * 10) / 10,
         currentSoilTempC: Math.round(currentSoilTempC * 10) / 10,
         pastWeekSoilTempC: Math.round(pastWeekSoilTempC * 10) / 10,
         weatherMultiplier: 1.0
       };
     });
+
+    this.cache.set(cacheKey, { data: results, timestamp: Date.now() });
+    return results;
   }
 
   /**

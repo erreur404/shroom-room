@@ -2,6 +2,7 @@ import { EnvironmentalInputs, ForagingWaypoint, RegionId, ScoringResult, Species
 import { ScoringEngine } from './scoring/pipelines';
 import { WeatherService } from './services/weatherService';
 import { HabitatDataService, REGION_PRESETS, SPECIES_DETAILS } from './services/habitatDataService';
+import { getTileId } from '../server/tileConfig';
 import { MapHarness } from './components/MapHarness';
 import { WaypointPlanner } from './components/WaypointPlanner';
 import { HeaderBar } from './components/HeaderBar';
@@ -127,14 +128,28 @@ class ShroomRoomApp {
     });
   }
 
-  private addWaypointAt(lat: number, lon: number) {
-    const env = this.habitatService.getEnvironmentalInputs(
+  private async addWaypointAt(lat: number, lon: number) {
+    let env = this.habitatService.getEnvironmentalInputs(
       lat,
       lon,
       this.currentDateStr,
       [],
       this.weatherService
     );
+
+    if (!env) {
+      await this.habitatService.fetchTile(getTileId(lat, lon));
+      env = this.habitatService.getEnvironmentalInputs(
+        lat,
+        lon,
+        this.currentDateStr,
+        [],
+        this.weatherService
+      );
+    }
+
+    if (!env) return;
+
     const score = this.scoringEngine.evaluate(this.currentSpecies, env);
     const count = this.waypointPlanner.getWaypoints().length + 1;
 
@@ -143,15 +158,15 @@ class ShroomRoomApp {
       name: `Hotspot #${count} (${this.currentSpecies === 'boletus' ? 'Porcini' : 'Chanterelle'})`,
       lat,
       lon,
-      elevationMeters: env.elevationMeters,
-      suitabilityScore: Math.round(score.suitabilityScore * 100),
-      weatherScore: Math.round(score.weatherScore * 100),
-      probabilityScore: Math.round(score.overallProbability * 100),
-      soilPH: env.soilPH,
+      elevationMeters: env?.elevationMeters,
+      soilPH: env?.soilPH,
       dominantTree: this.habitatService.getHostTreeName(env.hostTreeGenus),
       rain14DaysMm: env.rain14DaysMm,
       currentSoilTempC: env.currentSoilTempC,
       speciesId: this.currentSpecies,
+      suitabilityScore: Math.round(score.suitabilityScore * 100),
+      weatherScore: Math.round(score.weatherScore * 100),
+      probabilityScore: Math.round(score.overallProbability * 100),
       createdAt: new Date().toISOString()
     };
 

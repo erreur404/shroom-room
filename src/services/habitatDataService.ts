@@ -78,9 +78,85 @@ export const SPECIES_DETAILS: Record<SpeciesId, {
   }
 };
 
+import { BakedTileData, getTileId, getTileIdsForViewport } from '../../server/tileConfig';
+
 export class HabitatDataService {
+  private tileCache: Map<string, BakedTileData> = new Map();
+  private pendingFetches: Set<string> = new Set();
+  private onTileUpdateCallbacks: (() => void)[] = [];
+
+  constructor() {}
+
   /**
-   * Evaluates spatial environmental conditions (SoilGrids + ForestPaths) for a coordinate
+   * Register a listener to be notified when new tile data arrives from the backend
+   */
+  onTileUpdate(cb: () => void) {
+    this.onTileUpdateCallbacks.push(cb);
+  }
+
+  private notifyUpdate() {
+    for (const cb of this.onTileUpdateCallbacks) {
+      cb();
+    }
+  }
+
+  /**
+   * Fetches tile data from backend server (http://localhost:3001/api/tiles/:tileId)
+   */
+  async fetchTile(tileId: string): Promise<BakedTileData | null> {
+    if (this.tileCache.has(tileId)) {
+      return this.tileCache.get(tileId)!;
+    }
+
+    if (this.pendingFetches.has(tileId)) {
+      return null;
+    }
+
+    this.pendingFetches.add(tileId);
+
+    try {
+      // 1. Check if tile is already baked
+      let res = await fetch(`http://localhost:3001/api/tiles/${tileId}`);
+      
+      if (res.status === 404) {
+        // Trigger bake on the server
+        await fetch('http://localhost:3001/api/tiles/bake', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tileId })
+        });
+
+        // Poll once after a brief delay
+        await new Promise(r => setTimeout(r, 1200));
+        res = await fetch(`http://localhost:3001/api/tiles/${tileId}`);
+      }
+
+      if (res.ok) {
+        const data: BakedTileData = await res.json();
+        this.tileCache.set(tileId, data);
+        this.notifyUpdate();
+        return data;
+      }
+    } catch (err) {
+      // Backend server may be starting or offline
+      console.warn(`[HabitatDataService] Could not fetch tile ${tileId} from backend`, err);
+    } finally {
+      this.pendingFetches.delete(tileId);
+    }
+
+    return null;
+  }
+
+  /**
+   * Prefetches all tiles in the given viewport from the backend
+   */
+  async prefetchViewport(bounds: { south: number; west: number; north: number; east: number }) {
+    const tileIds = getTileIdsForViewport(bounds);
+    await Promise.all(tileIds.map(tid => this.fetchTile(tid)));
+  }
+
+  /**
+   * Evaluates spatial environmental conditions using real baked tile data from the server
    */
   getEnvironmentalInputs(
     lat: number,
@@ -88,64 +164,60 @@ export class HabitatDataService {
     dateStr: string,
     weatherGrid: WeatherGridPoint[],
     weatherService: WeatherService
-  ): EnvironmentalInputs {
-    // 1. Synthesize realistic SoilGrids pH based on regional geology and spatial variation
-    const geoNoise = Math.sin(lat * 45.0) * Math.cos(lon * 45.0);
-    const microNoise = Math.sin(lat * 180.0) * Math.cos(lon * 180.0);
+  ): EnvironmentalInputs | null {
+    const tileId = getTileId(lat, lon);
+    const tile = this.tileCache.get(tileId);
 
-    // Regional baseline pH: Harz (4.8), Brocéliande (4.6), Göhrde (5.4), Lüneburg (4.5), Huelgoat (4.4)
-    let basePH = 5.0;
-    if (lat > 51.5 && lat < 52.0) basePH = 4.9; // Harz
-    else if (lat > 53.0 && lon > 10.5) basePH = 5.5; // Göhrde
-    else if (lat > 53.0 && lon < 10.2) basePH = 4.6; // Lüneburg
-    else if (lat < 48.2 && lon < -2.0) basePH = 4.7; // Brocéliande
-    else if (lat > 48.2 && lon < -3.5) basePH = 4.4; // Huelgoat
-
-    const soilPH = Math.max(3.8, Math.min(7.4, basePH + geoNoise * 0.5 + microNoise * 0.25));
-
-    // 2. Synthesize ForestPaths 10m tree genus classification
-    // Generates realistic patches of Spruce (1), Pine (2), Beech (3), Oak (4), Non-forest (7)
-    const forestPatch = Math.sin(lat * 80.0) + Math.cos(lon * 80.0);
-    const treeKindNoise = Math.sin(lat * 220.0) * Math.cos(lon * 220.0);
-    
-    let hostTreeGenus = 7; // Non-forest default
-    let distToHostMeters = 50;
-
-    if (forestPatch > -0.3) {
-      // In forest patch
-      distToHostMeters = Math.max(2, Math.floor(Math.abs(microNoise) * 22));
-      if (treeKindNoise < -0.3) hostTreeGenus = 1; // Picea (Spruce)
-      else if (treeKindNoise < 0.1) hostTreeGenus = 2; // Pinus (Pine)
-      else if (treeKindNoise < 0.5) hostTreeGenus = 3; // Fagus (Beech)
-      else hostTreeGenus = 4; // Quercus (Oak)
+    if (!tile) {
+      // Trigger async fetch for next render
+      this.fetchTile(tileId);
+      return null;
     }
 
-    // 3. Soil texture
-    const clayPct = Math.max(10, Math.min(45, 22 + geoNoise * 8));
-    const sandPct = Math.max(20, Math.min(80, 55 - clayPct));
-    const socDgKg = Math.max(120, Math.min(450, 240 + microNoise * 60));
-
-    // 4. Topography / Elevation
-    let elevationMeters = 180;
-    if (lat > 51.5 && lat < 52.0) elevationMeters = Math.max(250, Math.floor(580 + geoNoise * 280)); // Harz
-    else if (lat > 48.0 && lat < 48.5) elevationMeters = Math.max(80, Math.floor(190 + geoNoise * 110)); // Bretagne
-
-    const aspectDegrees = Math.floor((Math.abs(geoNoise * 180) + 45) % 360);
-
-    // 5. Interpolate weather for this point
     const weather = weatherService.interpolateAt(lat, lon, weatherGrid);
+
+    // 1. If 100% Non-forest tile (e.g. city / open water)
+    if (tile.isEmpty || !tile.cells || tile.cells.length === 0) {
+      return {
+        lat,
+        lon,
+        soilPH: 6.8,
+        clayPct: 20,
+        sandPct: 40,
+        socDgKg: 100,
+        hostTreeGenus: 7, // Non-forest
+        distToHostMeters: 200,
+        elevationMeters: 80,
+        aspectDegrees: 180,
+        rain14DaysMm: weather.rain14DaysMm,
+        currentSoilTempC: weather.currentSoilTempC,
+        pastWeekSoilTempC: weather.pastWeekSoilTempC,
+        date: dateStr
+      };
+    }
+
+    // 2. Find closest baked 250m cell in the matrix
+    let closest = tile.cells[0];
+    let minD = 999999;
+    for (const cell of tile.cells) {
+      const d = Math.pow(cell.lat - lat, 2) + Math.pow(cell.lon - lon, 2);
+      if (d < minD) {
+        minD = d;
+        closest = cell;
+      }
+    }
 
     return {
       lat,
       lon,
-      soilPH: Math.round(soilPH * 10) / 10,
-      clayPct: Math.round(clayPct),
-      sandPct: Math.round(sandPct),
-      socDgKg: Math.round(socDgKg),
-      hostTreeGenus,
-      distToHostMeters,
-      elevationMeters,
-      aspectDegrees,
+      soilPH: closest.soilPH,
+      clayPct: closest.clayPct,
+      sandPct: closest.sandPct,
+      socDgKg: closest.socDgKg,
+      hostTreeGenus: closest.treeGenus,
+      distToHostMeters: closest.distToHostMeters,
+      elevationMeters: 250,
+      aspectDegrees: 180,
       rain14DaysMm: weather.rain14DaysMm,
       currentSoilTempC: weather.currentSoilTempC,
       pastWeekSoilTempC: weather.pastWeekSoilTempC,
