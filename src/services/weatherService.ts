@@ -44,7 +44,7 @@ export class WeatherService {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats.join(',')}&longitude=${lons.join(',')}&daily=precipitation_sum,temperature_2m_mean&hourly=soil_temperature_0cm,soil_temperature_6cm&past_days=14&timezone=auto`;
     
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
     let response: Response;
     try {

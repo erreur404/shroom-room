@@ -6,6 +6,12 @@ export interface LanduseCheckResult {
   forestPolygons?: [number, number][][]; // Array of polygon coordinate rings [lat, lon]
 }
 
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+];
+
 export class LanduseService {
   private memoryCache: Map<string, LanduseCheckResult> = new Map();
 
@@ -21,67 +27,94 @@ export class LanduseService {
 
     // Overpass QL bounding box: (south, west, north, east)
     const bboxStr = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`;
-    const overpassQuery = `[out:json][timeout:8];(
+    const overpassQuery = `[out:json][timeout:60];(
       way["landuse"="forest"](${bboxStr});
       relation["landuse"="forest"](${bboxStr});
       way["natural"="wood"](${bboxStr});
       relation["natural"="wood"](${bboxStr});
     );out geom;`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 7000);
+    let lastError: any = null;
 
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'ShroomRoom/1.0 (https://github.com/shroom-room)'
-      },
-      body: `data=${encodeURIComponent(overpassQuery)}`,
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
+    for (let i = 0; i < OVERPASS_ENDPOINTS.length; i++) {
+      const endpoint = OVERPASS_ENDPOINTS[i];
+      const mirrorName = new URL(endpoint).hostname;
+      const startTime = Date.now();
 
-    if (!response.ok) {
-      throw new Error(`Overpass HTTP ${response.status}`);
-    }
+      console.log(`[LanduseService] [${tileId}] [Mirror ${i + 1}/${OVERPASS_ENDPOINTS.length} (${mirrorName})] Checking forest landcover (Bbox: ${bboxStr})...`);
 
-    const data = await response.json();
-    const elements = data.elements || [];
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
 
-    if (elements.length === 0) {
-      // Zero forest features found in bounding box (e.g. Braunschweig urban core, lakes, farmland)
-      const emptyResult: LanduseCheckResult = {
-        isForest: false,
-        forestCoveragePct: 0
-      };
-      this.memoryCache.set(tileId, emptyResult);
-      return emptyResult;
-    }
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'ShroomRoom/1.0 (https://github.com/shroom-room)'
+          },
+          body: `data=${encodeURIComponent(overpassQuery)}`,
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
 
-    // Extract polygon rings
-    const forestPolygons: [number, number][][] = [];
-    let totalPoints = 0;
+        const duration = Date.now() - startTime;
 
-    for (const el of elements) {
-      if (el.geometry && el.geometry.length >= 3) {
-        const ring: [number, number][] = el.geometry.map((pt: any) => [pt.lat, pt.lon]);
-        forestPolygons.push(ring);
-        totalPoints += ring.length;
+        if (!response.ok) {
+          const errText = await response.text().catch(() => '');
+          console.warn(`[LanduseService] [${tileId}] Mirror ${mirrorName} returned HTTP ${response.status} after ${duration}ms: ${errText.slice(0, 120)}`);
+          lastError = new Error(`Overpass HTTP ${response.status} from ${mirrorName}`);
+          continue; // Try next mirror
+        }
+
+        const data = await response.json();
+        const elements = data.elements || [];
+        console.log(`[LanduseService] [${tileId}] Mirror ${mirrorName} succeeded in ${duration}ms (${elements.length} forest elements found)`);
+
+        if (elements.length === 0) {
+          // Zero forest features found in bounding box
+          const emptyResult: LanduseCheckResult = {
+            isForest: false,
+            forestCoveragePct: 0
+          };
+          this.memoryCache.set(tileId, emptyResult);
+          return emptyResult;
+        }
+
+        // Extract polygon rings
+        const forestPolygons: [number, number][][] = [];
+        let totalPoints = 0;
+
+        for (const el of elements) {
+          if (el.geometry && el.geometry.length >= 3) {
+            const ring: [number, number][] = el.geometry.map((pt: any) => [pt.lat, pt.lon]);
+            forestPolygons.push(ring);
+            totalPoints += ring.length;
+          }
+        }
+
+        // Estimate approximate forest coverage percentage
+        const estimatedCoveragePct = Math.min(95, Math.max(5, Math.floor(elements.length * 12)));
+
+        const result: LanduseCheckResult = {
+          isForest: true,
+          forestCoveragePct: estimatedCoveragePct,
+          forestPolygons
+        };
+
+        this.memoryCache.set(tileId, result);
+        return result;
+
+      } catch (err: any) {
+        clearTimeout(timeout);
+        const duration = Date.now() - startTime;
+        const errMsg = err?.name === 'AbortError' ? 'Timeout (60s exceeded)' : (err?.message || String(err));
+        console.warn(`[LanduseService] [${tileId}] Mirror ${mirrorName} failed after ${duration}ms: ${errMsg}`);
+        lastError = err;
       }
     }
 
-    // Estimate approximate forest coverage percentage
-    const estimatedCoveragePct = Math.min(95, Math.max(5, Math.floor(elements.length * 12)));
-
-    const result: LanduseCheckResult = {
-      isForest: true,
-      forestCoveragePct: estimatedCoveragePct,
-      forestPolygons
-    };
-
-    this.memoryCache.set(tileId, result);
-    return result;
+    throw new Error(`All Overpass mirrors failed for tile ${tileId}: ${lastError?.message || 'Unknown error'}`);
   }
 
   /**

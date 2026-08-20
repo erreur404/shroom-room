@@ -46,6 +46,7 @@ export class FogOfWarLayer {
 
   async syncViewportTiles() {
     if (!this.map) return;
+    if (this.map.getZoom() <= 9) return;
     const bounds = this.map.getBounds();
     const viewport = {
       south: bounds.getSouth(),
@@ -91,6 +92,7 @@ export class FogOfWarLayer {
   }
 
   private async pollTileStatuses() {
+    if (!this.map || this.map.getZoom() <= 9) return;
     // Only poll if there are actively baking tiles
     const hasBaking = Array.from(this.tileStatuses.values()).some(s => s.status === 'baking');
     if (hasBaking) {
@@ -100,6 +102,10 @@ export class FogOfWarLayer {
 
   renderFogTiles() {
     if (!this.map) return;
+    // Disable rectangle generation at zoom 9 and below to prevent main-thread freezing.
+    // Existing rectangles stay untouched.
+    if (this.map.getZoom() <= 9) return;
+
     this.fogLayerGroup.clearLayers();
 
     const bounds = this.map.getBounds();

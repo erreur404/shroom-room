@@ -123,14 +123,9 @@ export class MapHarness {
           this.callbacks.onCoordinateClick(env, score);
         }
       } else {
-        // Fetch from backend tile baker
-        this.habitatService.fetchTile(getTileId(lat, lon)).then(() => {
-          const freshEnv = this.habitatService.getEnvironmentalInputs(lat, lon, this.currentDateStr, this.weatherGrid, this.weatherService);
-          if (freshEnv) {
-            const score = this.scoringEngine.evaluate(this.currentSpeciesId, freshEnv);
-            this.callbacks.onCoordinateClick(freshEnv, score);
-          }
-        });
+        // Coordinate is in an unbaked tile area - trigger bake upon click!
+        const tileId = getTileId(lat, lon);
+        this.fogOfWarLayer.triggerBake(tileId);
       }
     });
 
@@ -195,11 +190,12 @@ export class MapHarness {
       this.callbacks.onWeatherAvailabilityChange?.(false);
     }
 
-    // 2. Prefetch real baked habitat tiles from backend
-    this.habitatService.prefetchViewport(viewport);
-
-    // 3. Sync Fog of War unbaked/baking state
-    this.fogOfWarLayer?.syncViewportTiles();
+    // 2. Prefetch real baked habitat tiles from backend (only at zoom > 9)
+    if (this.map.getZoom() > 9) {
+      this.habitatService.prefetchViewport(viewport);
+      // 3. Sync Fog of War unbaked/baking state
+      this.fogOfWarLayer?.syncViewportTiles();
+    }
 
     // 4. Render Canvas Overlay
     this.renderCanvasOverlay();
@@ -207,6 +203,7 @@ export class MapHarness {
 
   /**
    * Ground-Truth Dual Color-Blending Canvas Shader
+   * - Aligned pixel-perfect to exact baked tile boundaries and 250m cell matrices
    * - Red Canvas: Ground-Truth Baked Suitability (0.30 - 0.70)
    * - Blue Canvas: Dynamic Weather Trigger (0.30 - 0.70)
    * - Natural Overlap: Renders Glowing Purple Hotspots
@@ -228,49 +225,80 @@ export class MapHarness {
     const mapOrigin = this.map.containerPointToLayerPoint([0, 0]);
     L.DomUtil.setPosition(this.overlayCanvas, mapOrigin);
 
-    const bounds = this.map.getBounds();
-    const gridCols = 36;
-    const gridRows = 26;
-    const cellW = width / gridCols;
-    const cellH = height / gridRows;
+    const mapBounds = this.map.getBounds();
+    const loadedTiles = this.habitatService.getAllLoadedTiles();
+    const isSeason = this.scoringEngine.isSeasonActive(this.currentSpeciesId, this.currentDateStr);
 
-    const south = bounds.getSouth();
-    const west = bounds.getWest();
-    const north = bounds.getNorth();
-    const east = bounds.getEast();
+    for (const tile of loadedTiles) {
+      if (tile.isEmpty || !tile.cells || tile.cells.length === 0) continue;
 
-    for (let r = 0; r < gridRows; r++) {
-      for (let c = 0; c < gridCols; c++) {
-        const lat = north - (r / gridRows) * (north - south);
-        const lon = west + (c / gridCols) * (east - west);
+      const tb = tile.bounds;
+      const tileLatLngBounds = L.latLngBounds([tb.south, tb.west], [tb.north, tb.east]);
+      if (!mapBounds.intersects(tileLatLngBounds)) continue;
 
-        const env = this.habitatService.getEnvironmentalInputs(lat, lon, this.currentDateStr, this.weatherGrid, this.weatherService);
-        if (!env) continue;
+      const rows = tile.rows;
+      const cols = tile.cols;
+      const dLat = (tb.north - tb.south) / rows;
+      const dLon = (tb.east - tb.west) / cols;
 
-        const scoring = this.scoringEngine.evaluate(this.currentSpeciesId, env);
+      for (const cell of tile.cells) {
+        const cellNorth = tb.north - cell.row * dLat;
+        const cellSouth = tb.north - (cell.row + 1) * dLat;
+        const cellWest = tb.west + cell.col * dLon;
+        const cellEast = tb.west + (cell.col + 1) * dLon;
 
-        const suitScore = scoring.suitabilityScore;
-        const weatherScore = scoring.weatherScore;
+        // Project cell geographic bounding box to canvas pixel coordinates
+        const pTopLeft = this.map.latLngToContainerPoint([cellNorth, cellWest]);
+        const pBottomRight = this.map.latLngToContainerPoint([cellSouth, cellEast]);
 
-        const x = c * cellW;
-        const y = r * cellH;
+        const cellW = pBottomRight.x - pTopLeft.x;
+        const cellH = pBottomRight.y - pTopLeft.y;
+
+        if (cellW <= 0 || cellH <= 0) continue;
+
+        // Suitability (0..1)
+        const rawSuitability = this.currentSpeciesId === 'boletus'
+          ? (cell.boletusSuitability ?? 0)
+          : (cell.chanterelleSuitability ?? 0);
+        const suitScore = rawSuitability / 100;
 
         // 1. Draw Suitability (Red)
         if (this.isSuitabilityVisible && suitScore > 0.15) {
           const alpha = Math.min(0.85, (0.25 + 0.50 * suitScore) * (this.suitabilityOpacity / 0.50));
           ctx.fillStyle = `rgba(239, 68, 68, ${alpha.toFixed(3)})`;
-          ctx.fillRect(x, y, cellW + 1, cellH + 1);
+          ctx.fillRect(pTopLeft.x, pTopLeft.y, cellW + 0.5, cellH + 0.5);
         }
 
-        // 2. Draw Weather Trigger (Blue) with Additive/Multiply blending (ONLY when in season)
-        const isSeason = this.scoringEngine.isSeasonActive(this.currentSpeciesId, this.currentDateStr);
-        if (this.isProbabilityVisible && weatherScore > 0.15 && isSeason) {
-          const alpha = Math.min(0.85, (0.25 + 0.50 * weatherScore) * (this.probabilityOpacity / 0.50));
-          ctx.save();
-          ctx.globalCompositeOperation = 'lighter';
-          ctx.fillStyle = `rgba(59, 130, 246, ${alpha.toFixed(3)})`;
-          ctx.fillRect(x, y, cellW + 1, cellH + 1);
-          ctx.restore();
+        // 2. Draw Weather Trigger (Blue) with Additive blending (ONLY when in season)
+        if (this.isProbabilityVisible && isSeason) {
+          const weather = this.weatherService.interpolateAt(cell.lat, cell.lon, this.weatherGrid);
+          const env: EnvironmentalInputs = {
+            lat: cell.lat,
+            lon: cell.lon,
+            soilPH: cell.soilPH,
+            clayPct: cell.clayPct,
+            sandPct: cell.sandPct,
+            socDgKg: cell.socDgKg,
+            hostTreeGenus: cell.treeGenus,
+            distToHostMeters: cell.distToHostMeters,
+            elevationMeters: 250,
+            aspectDegrees: 180,
+            rain14DaysMm: weather.rain14DaysMm,
+            currentSoilTempC: weather.currentSoilTempC,
+            pastWeekSoilTempC: weather.pastWeekSoilTempC,
+            date: this.currentDateStr
+          };
+          const scoring = this.scoringEngine.evaluate(this.currentSpeciesId, env);
+          const weatherScore = scoring.weatherScore;
+
+          if (weatherScore > 0.15) {
+            const alpha = Math.min(0.85, (0.25 + 0.50 * weatherScore) * (this.probabilityOpacity / 0.50));
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = `rgba(59, 130, 246, ${alpha.toFixed(3)})`;
+            ctx.fillRect(pTopLeft.x, pTopLeft.y, cellW + 0.5, cellH + 0.5);
+            ctx.restore();
+          }
         }
       }
     }

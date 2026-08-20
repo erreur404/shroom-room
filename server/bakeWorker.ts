@@ -15,6 +15,16 @@ export type BakeStep =
   | 'completed'
   | 'error';
 
+export const STEP_DESCRIPTIONS: Record<BakeStep, string> = {
+  idle: 'Idle',
+  landuse_check: 'Tier-1 Forest Landcover Check (OpenStreetMap Overpass)',
+  downloading_trees: 'Extracting Forest Tree Genus (ForestPaths)',
+  downloading_soil: 'Ingesting Soil Chemistry pH/Clay/Sand/SOC (SoilGrids v2.0)',
+  computing_suitability: 'Evaluating Species Suitability Matrices',
+  completed: 'Completed',
+  error: 'Error'
+};
+
 export interface BakeJobState {
   tileId: string;
   step: BakeStep;
@@ -72,16 +82,18 @@ export class BakeWorker {
     }
 
     // 3. Initialize new Bake Job
+    const startTime = Date.now();
+    const bounds = parseTileBounds(tileId);
+    console.log(`[BakeWorker] [${tileId}] Starting bake job for bounds [S:${bounds.south}, W:${bounds.west}, N:${bounds.north}, E:${bounds.east}]`);
+
     const job: BakeJobState = {
       tileId,
       step: 'landuse_check',
       progressPct: 10,
       message: 'Checking OpenStreetMap forest landcover...',
-      startedAt: Date.now()
+      startedAt: startTime
     };
     this.activeJobs.set(tileId, job);
-
-    const bounds = parseTileBounds(tileId);
 
     try {
       // ─── STEP 1: Tier-1 Landuse Gating ──────────────────────────────────
@@ -96,6 +108,7 @@ export class BakeWorker {
         job.completedAt = Date.now();
 
         const emptyTile = this.tileStore.createEmptyTile(tileId);
+        console.log(`[BakeWorker] [${tileId}] Completed: Non-forest area (0% coverage) in ${Date.now() - startTime}ms`);
         return emptyTile;
       }
 
@@ -195,18 +208,25 @@ export class BakeWorker {
 
       this.tileStore.saveTile(bakedTile);
 
+      const totalDuration = Date.now() - startTime;
       job.step = 'completed';
       job.progressPct = 100;
-      job.message = `Successfully baked ${cells.length} cells. Saved to disk.`;
+      job.message = `Successfully baked ${cells.length} cells in ${totalDuration}ms. Saved to disk.`;
       job.completedAt = Date.now();
 
+      console.log(`[BakeWorker] [${tileId}] Successfully baked ${cells.length} cells in ${totalDuration}ms (Forest: ${landuse.forestCoveragePct}%, Soil pH: ${soilProps.soilPH})`);
       return bakedTile;
 
     } catch (err: any) {
-      console.error(`[BakeWorker] Failed baking tile ${tileId}`, err);
+      const totalDuration = Date.now() - startTime;
+      const failedStep = job.step;
+      const stepDescription = STEP_DESCRIPTIONS[failedStep] || failedStep;
+      const errorMsg = err?.message || String(err);
+
+      console.error(`[BakeWorker] [${tileId}] ❌ Operation failed at step '${failedStep}' (${stepDescription}) after ${totalDuration}ms: ${errorMsg}`);
       job.step = 'error';
-      job.error = err?.message || 'Bake worker execution error';
-      throw err;
+      job.error = `Failed at step '${failedStep}' (${stepDescription}): ${errorMsg}`;
+      throw new Error(`[Step: ${failedStep} (${stepDescription})] ${errorMsg}`);
     }
   }
 }

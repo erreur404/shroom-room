@@ -104,7 +104,7 @@ app.post('/api/tiles/bake', async (req, res) => {
 
     // Launch bake job in background
     bakeWorker.bakeTile(tileId).catch(err => {
-      console.error(`[Server] Background bake failed for ${tileId}:`, err);
+      console.error(`[Server] [${tileId}] Background bake failed:`, err?.message || err);
     });
 
     const job = bakeWorker.getJobState(tileId);

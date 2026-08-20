@@ -110,7 +110,8 @@ export class HabitatDataService {
   }
 
   /**
-   * Fetches tile data from backend server
+   * Fetches tile data from backend server (if already baked).
+   * Does NOT trigger automatic baking.
    */
   async fetchTile(tileId: string): Promise<BakedTileData | null> {
     if (this.tileCache.has(tileId)) {
@@ -124,21 +125,8 @@ export class HabitatDataService {
     this.pendingFetches.add(tileId);
 
     try {
-      // 1. Check if tile is already baked
-      let res = await fetch(`${API_BASE_URL}/api/tiles/${tileId}`);
-      
-      if (res.status === 404) {
-        // Trigger bake on the server
-        await fetch(`${API_BASE_URL}/api/tiles/bake`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tileId })
-        });
-
-        // Poll once after a brief delay
-        await new Promise(r => setTimeout(r, 1200));
-        res = await fetch(`${API_BASE_URL}/api/tiles/${tileId}`);
-      }
+      // Check if tile is already baked
+      const res = await fetch(`${API_BASE_URL}/api/tiles/${tileId}`);
 
       if (res.ok) {
         const data: BakedTileData = await res.json();
@@ -157,11 +145,36 @@ export class HabitatDataService {
   }
 
   /**
-   * Prefetches all tiles in the given viewport from the backend
+   * Explicitly triggers baking for a tile (upon user click)
+   */
+  async bakeTile(tileId: string): Promise<void> {
+    try {
+      await fetch(`${API_BASE_URL}/api/tiles/bake`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tileId })
+      });
+    } catch (err) {
+      console.warn(`[HabitatDataService] Could not trigger bake for ${tileId}`, err);
+    }
+  }
+
+  getAllLoadedTiles(): BakedTileData[] {
+    return Array.from(this.tileCache.values());
+  }
+
+  getLoadedTile(tileId: string): BakedTileData | undefined {
+    return this.tileCache.get(tileId);
+  }
+
+  /**
+   * Prefetches all already-baked tiles in the given viewport from the backend
    */
   async prefetchViewport(bounds: { south: number; west: number; north: number; east: number }) {
     const tileIds = getTileIdsForViewport(bounds);
-    await Promise.all(tileIds.map(tid => this.fetchTile(tid)));
+    // Limit prefetch to a maximum of 40 tiles per batch to avoid browser network saturation
+    const cappedTileIds = tileIds.slice(0, 40);
+    await Promise.all(cappedTileIds.map(tid => this.fetchTile(tid)));
   }
 
   /**
