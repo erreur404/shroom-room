@@ -71,4 +71,61 @@ export class SoilgridsService {
     this.cache.set(key, props);
     return props;
   }
+
+  /**
+   * Samples SoilGrids at 4 spatial quadrants across the tile and provides
+   * bilinear-interpolated soil chemistry for every individual cell
+   */
+  async sampleTileSoilGrid(
+    bounds: { south: number; west: number; north: number; east: number },
+    rows: number,
+    cols: number
+  ): Promise<(r: number, c: number) => SoilProperties> {
+    const dLat = bounds.north - bounds.south;
+    const dLon = bounds.east - bounds.west;
+
+    // 4 quadrant coordinates across the tile
+    const swCoords = { lat: bounds.south + 0.25 * dLat, lon: bounds.west + 0.25 * dLon };
+    const seCoords = { lat: bounds.south + 0.25 * dLat, lon: bounds.west + 0.75 * dLon };
+    const nwCoords = { lat: bounds.south + 0.75 * dLat, lon: bounds.west + 0.25 * dLon };
+    const neCoords = { lat: bounds.south + 0.75 * dLat, lon: bounds.west + 0.75 * dLon };
+
+    try {
+      const [sw, se, nw, ne] = await Promise.all([
+        this.getSoilProperties(swCoords.lat, swCoords.lon),
+        this.getSoilProperties(seCoords.lat, seCoords.lon),
+        this.getSoilProperties(nwCoords.lat, nwCoords.lon),
+        this.getSoilProperties(neCoords.lat, neCoords.lon)
+      ]);
+
+      return (r: number, c: number): SoilProperties => {
+        // r goes 0 (north) to rows-1 (south)
+        // ty: 0 at south, 1 at north
+        const ty = 1 - (r / Math.max(1, rows - 1));
+        // tx: 0 at west, 1 at east
+        const tx = c / Math.max(1, cols - 1);
+
+        const interp = (vSW: number, vSE: number, vNW: number, vNE: number) => {
+          const bottom = vSW * (1 - tx) + vSE * tx;
+          const top = vNW * (1 - tx) + vNE * tx;
+          return bottom * (1 - ty) + top * ty;
+        };
+
+        return {
+          soilPH: Number(interp(sw.soilPH, se.soilPH, nw.soilPH, ne.soilPH).toFixed(1)),
+          clayPct: Math.round(interp(sw.clayPct, se.clayPct, nw.clayPct, ne.clayPct)),
+          sandPct: Math.round(interp(sw.sandPct, se.sandPct, nw.sandPct, ne.sandPct)),
+          socDgKg: Math.round(interp(sw.socDgKg, se.socDgKg, nw.socDgKg, ne.socDgKg))
+        };
+      };
+
+    } catch (err) {
+      // Fallback to center point if multiple queries fail
+      const centerSoil = await this.getSoilProperties(
+        (bounds.south + bounds.north) / 2,
+        (bounds.west + bounds.east) / 2
+      );
+      return () => centerSoil;
+    }
+  }
 }

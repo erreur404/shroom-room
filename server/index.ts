@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getTileIdsForViewport, parseTileBounds } from './tileConfig';
 import { LanduseService } from './landuseService';
 import { SoilgridsService } from './soilgridsService';
@@ -7,11 +10,19 @@ import { ForestpathsService } from './forestpathsService';
 import { TileStore } from './tileStore';
 import { BakeWorker } from './bakeWorker';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.resolve(__dirname, '../dist');
+
 const app = express();
 const PORT = process.env.PORT || 3002;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend build
+app.use(express.static(distPath));
+
 
 // Initialize Services
 const landuseService = new LanduseService();
@@ -133,6 +144,22 @@ app.get('/api/tiles/:tileId', (req, res) => {
   res.json(tile);
 });
 
+/**
+ * Fallback to index.html for frontend SPA routing (non-API routes)
+ */
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  const indexPath = path.join(distPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Frontend not built. Please run `npm run build`.');
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🌲 Shroom Room Progressive Tile Baker running on http://localhost:${PORT}`);
 });
+

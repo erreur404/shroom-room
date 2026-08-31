@@ -1,9 +1,16 @@
 import { TileBounds } from './tileConfig';
 
+export interface ForestFeature {
+  ring: [number, number][]; // [lat, lon]
+  dominantGenus: number;
+  tags?: Record<string, string>;
+}
+
 export interface LanduseCheckResult {
   isForest: boolean;
   forestCoveragePct: number;
   forestPolygons?: [number, number][][]; // Array of polygon coordinate rings [lat, lon]
+  forestFeatures?: ForestFeature[];
 }
 
 const OVERPASS_ENDPOINTS = [
@@ -11,6 +18,64 @@ const OVERPASS_ENDPOINTS = [
   'https://overpass.kumi.systems/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
 ];
+
+function parseGenusFromOSMTags(tags: Record<string, string> | undefined, lat: number, lon: number): number {
+  if (!tags) return defaultGenusByRegion(lat, lon);
+
+  const str = `${tags.species || ''} ${tags.genus || ''} ${tags.trees || ''} ${tags.taxon || ''} ${tags.name || ''}`.toLowerCase();
+
+  if (str.includes('quercus') || str.includes('oak') || str.includes('chêne') || str.includes('chene') || str.includes('eiche')) {
+    return 4; // Oak (Quercus)
+  }
+  if (str.includes('fagus') || str.includes('beech') || str.includes('hêtre') || str.includes('hetre') || str.includes('buche')) {
+    return 3; // Beech (Fagus)
+  }
+  if (str.includes('picea') || str.includes('spruce') || str.includes('épicéa') || str.includes('epicea') || str.includes('fichte')) {
+    return 1; // Spruce (Picea)
+  }
+  if (str.includes('pinus') || str.includes('pine') || str.includes('pin') || str.includes('kiefer')) {
+    return 2; // Pine (Pinus)
+  }
+  if (str.includes('betula') || str.includes('birch') || str.includes('bouleau') || str.includes('birke')) {
+    return 6; // Birch / Deciduous
+  }
+  if (str.includes('larix') || str.includes('larch') || str.includes('mélèze') || str.includes('meleze')) {
+    return 0; // Larch (Larix)
+  }
+
+  const leafType = (tags['leaf_type'] || '').toLowerCase();
+  const wood = (tags['wood'] || '').toLowerCase();
+
+  if (leafType === 'needleleaved' || wood === 'conifer') {
+    return (lat > 51.5 && lon > 10.0) ? 1 : 2; // Spruce in high elevation/east, Pine elsewhere
+  }
+  if (leafType === 'broadleaved' || wood === 'deciduous') {
+    // Temperate Atlantic / Western Europe deciduous woods are primarily Oak & Beech
+    return (Math.abs(Math.sin(lat * 123.45 + lon * 678.9)) > 0.4) ? 4 : 3;
+  }
+  if (leafType === 'mixed') {
+    return (Math.abs(Math.cos(lat * 89.1 + lon * 23.4)) > 0.5) ? 4 : 2;
+  }
+
+  return defaultGenusByRegion(lat, lon);
+}
+
+function defaultGenusByRegion(lat: number, lon: number): number {
+  if (lat >= 51.70 && lat <= 51.90 && lon >= 10.35 && lon <= 10.65) {
+    return (lat > 51.78) ? 1 : 3; // Harz: Spruce / Beech
+  }
+  if (lat >= 53.08 && lat <= 53.22 && lon >= 10.75 && lon <= 10.95) {
+    return (lon > 10.85) ? 4 : 3; // Göhrde: Oak / Beech
+  }
+  if (lat >= 53.10 && lat <= 53.25 && lon >= 9.85 && lon <= 10.15) {
+    return 2; // Lüneburg: Scots Pine
+  }
+  if (lat >= 47.5 && lat <= 49.0 && lon >= -4.8 && lon <= -1.0) {
+    // Brittany / Armorican Massif (e.g. Brocéliande, Huelgoat, Léguer valley)
+    return (Math.abs(Math.sin(lat * 77 + lon * 33)) > 0.35) ? 4 : 3; // Oak (4) & Beech (3)
+  }
+  return 4; // Default Oak
+}
 
 export class LanduseService {
   private memoryCache: Map<string, LanduseCheckResult> = new Map();
@@ -75,31 +140,38 @@ export class LanduseService {
           // Zero forest features found in bounding box
           const emptyResult: LanduseCheckResult = {
             isForest: false,
-            forestCoveragePct: 0
+            forestCoveragePct: 0,
+            forestPolygons: [],
+            forestFeatures: []
           };
           this.memoryCache.set(tileId, emptyResult);
           return emptyResult;
         }
 
-        // Extract polygon rings
+        // Extract polygon rings with tags and genus
         const forestPolygons: [number, number][][] = [];
-        let totalPoints = 0;
+        const forestFeatures: ForestFeature[] = [];
 
         for (const el of elements) {
           if (el.geometry && el.geometry.length >= 3) {
             const ring: [number, number][] = el.geometry.map((pt: any) => [pt.lat, pt.lon]);
+            const dominantGenus = parseGenusFromOSMTags(el.tags, ring[0][0], ring[0][1]);
             forestPolygons.push(ring);
-            totalPoints += ring.length;
+            forestFeatures.push({
+              ring,
+              dominantGenus,
+              tags: el.tags || {}
+            });
           }
         }
 
-        // Estimate approximate forest coverage percentage
-        const estimatedCoveragePct = Math.min(95, Math.max(5, Math.floor(elements.length * 12)));
+        const estimatedCoveragePct = Math.min(95, Math.max(5, Math.floor(elements.length * 8)));
 
         const result: LanduseCheckResult = {
           isForest: true,
           forestCoveragePct: estimatedCoveragePct,
-          forestPolygons
+          forestPolygons,
+          forestFeatures
         };
 
         this.memoryCache.set(tileId, result);
@@ -118,15 +190,24 @@ export class LanduseService {
   }
 
   /**
-   * Checks if a specific coordinate lies within or adjacent to a forest feature
-   *//*
-  isPointInForest(lat: number, lon: number, polygons?: [number, number][][]): boolean {
-    if (!polygons || polygons.length === 0) return true; // If forest was detected in tile, default to true
+   * Spatial check for an individual cell coordinate:
+   * 1. Checks if point is inside any OSM forest polygon (Ray-casting containment).
+   * 2. If outside, computes real distance in meters to the nearest forest edge.
+   */
+  evaluateCellForest(
+    lat: number,
+    lon: number,
+    features?: ForestFeature[]
+  ): { isForest: boolean; dominantGenus: number; distToHostMeters: number } {
+    if (!features || features.length === 0) {
+      return { isForest: false, dominantGenus: 7, distToHostMeters: 500 };
+    }
 
-    for (const poly of polygons) {
-      if (poly.length === 0) continue;
+    // 1. Ray-casting point-in-polygon check for containment
+    for (const feature of features) {
+      const poly = feature.ring;
+      if (poly.length < 3) continue;
 
-      // 1. Ray casting polygon containment
       let inside = false;
       for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
         const xi = poly[i][0], yi = poly[i][1];
@@ -136,18 +217,52 @@ export class LanduseService {
           (lat < (xj - xi) * (lon - yi) / (yj - yi) + xi);
         if (intersect) inside = !inside;
       }
-      if (inside) return true;
 
-      // 2. Proximity test (within ~250m of any forest feature vertex)
-      for (let i = 0; i < poly.length; i++) {
-        const dLat = poly[i][0] - lat;
-        const dLon = poly[i][1] - lon;
-        // ~0.003 degrees ≈ 250m
-        if (dLat * dLat + dLon * dLon < 0.003 * 0.003) {
-          return true;
+      if (inside) {
+        return {
+          isForest: true,
+          dominantGenus: feature.dominantGenus,
+          distToHostMeters: 5
+        };
+      }
+    }
+
+    // 2. Proximity check: Calculate Euclidean distance in meters to the closest forest vertex
+    let minDistanceMeters = 999999;
+    let closestGenus = 4; // Default Oak
+
+    const metersPerLat = 111320;
+    const metersPerLon = 111320 * Math.cos(lat * (Math.PI / 180));
+
+    for (const feature of features) {
+      for (let i = 0; i < feature.ring.length; i++) {
+        const dLatM = (feature.ring[i][0] - lat) * metersPerLat;
+        const dLonM = (feature.ring[i][1] - lon) * metersPerLon;
+        const dist = Math.sqrt(dLatM * dLatM + dLonM * dLonM);
+
+        if (dist < minDistanceMeters) {
+          minDistanceMeters = dist;
+          closestGenus = feature.dominantGenus;
         }
       }
     }
-    return false;
-  }*/
+
+    const roundedDist = Math.round(minDistanceMeters);
+
+    if (roundedDist <= 25) {
+      // Within forest margin canopy drip line (<= 25m)
+      return {
+        isForest: true,
+        dominantGenus: closestGenus,
+        distToHostMeters: Math.max(5, roundedDist)
+      };
+    }
+
+    // Outside forest in agricultural fields / urban land
+    return {
+      isForest: false,
+      dominantGenus: 7, // Non-forest
+      distToHostMeters: roundedDist
+    };
+  }
 }

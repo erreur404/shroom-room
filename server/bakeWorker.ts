@@ -112,47 +112,45 @@ export class BakeWorker {
         return emptyTile;
       }
 
-      // ─── STEP 2 & 3: Sample 250m Cells for Trees & Soil ─────────────────
-      job.step = 'downloading_trees';
-      job.progressPct = 35;
-      job.message = `Found ${landuse.forestCoveragePct}% forest. Extracting ForestPaths tree genus...`;
-
       // 250m cell grid dimensions for 0.05° tile
       const rows = 22;
       const cols = 14;
       const dLat = (bounds.north - bounds.south) / rows;
       const dLon = (bounds.east - bounds.west) / cols;
 
-      const cells: BakedCell[] = [];
-
+      // ─── STEP 2 & 3: Ingest Multi-Point Soil Chemistry & Extract Trees ─
       job.step = 'downloading_soil';
-      job.progressPct = 60;
+      job.progressPct = 40;
       job.message = `Ingesting SoilGrids chemistry (pH, clay, sand, SOC)...`;
 
-      // Query soil properties at representative coordinates
-      const soilProps = await this.soilgridsService.getSoilProperties(
-        (bounds.south + bounds.north) / 2,
-        (bounds.west + bounds.east) / 2
-      );
+      // Sample 4 quadrants across the tile and create bilinear soil interpolator
+      const getSoilForCell = await this.soilgridsService.sampleTileSoilGrid(bounds, rows, cols);
 
-      // ─── STEP 4: Evaluate Suitability Matrices ───────────────────────────
+      job.step = 'downloading_trees';
+      job.progressPct = 65;
+      job.message = `Evaluating spatial forest boundaries and canopy composition...`;
+
+      // ─── STEP 4: Evaluate Suitability Matrices Per-Cell ──────────────────
       job.step = 'computing_suitability';
       job.progressPct = 85;
       job.message = `Computing Boletus & Chanterelle suitability models...`;
+
+      const cells: BakedCell[] = [];
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const cellLat = Number((bounds.north - r * dLat).toFixed(4));
           const cellLon = Number((bounds.west + c * dLon).toFixed(4));
 
-          const isInsideForest = landuse.isForest;
-
-          const treeData = await this.forestpathsService.extractTreeGenusForCell(
+          // 1. Point-in-polygon & distance calculation to nearest forest edge
+          const forestInfo = this.landuseService.evaluateCellForest(
             cellLat,
             cellLon,
-            isInsideForest,
-            bounds
+            landuse.forestFeatures
           );
+
+          // 2. Continuous spatial soil chemistry
+          const soilProps = getSoilForCell(r, c);
 
           // Construct EnvironmentalInputs for scoring engine
           const envInputs: EnvironmentalInputs = {
@@ -162,8 +160,8 @@ export class BakeWorker {
             clayPct: soilProps.clayPct,
             sandPct: soilProps.sandPct,
             socDgKg: soilProps.socDgKg,
-            hostTreeGenus: treeData.dominantGenus,
-            distToHostMeters: treeData.distToHostMeters,
+            hostTreeGenus: forestInfo.dominantGenus,
+            distToHostMeters: forestInfo.distToHostMeters,
             elevationMeters: 250,
             aspectDegrees: 180,
             rain14DaysMm: 35,
@@ -180,18 +178,21 @@ export class BakeWorker {
             col: c,
             lat: cellLat,
             lon: cellLon,
-            treeGenus: treeData.dominantGenus,
-            distToHostMeters: treeData.distToHostMeters,
+            treeGenus: forestInfo.dominantGenus,
+            distToHostMeters: forestInfo.distToHostMeters,
             soilPH: soilProps.soilPH,
             clayPct: soilProps.clayPct,
             sandPct: soilProps.sandPct,
             socDgKg: soilProps.socDgKg,
-            isForest: isInsideForest,
+            isForest: forestInfo.isForest,
             boletusSuitability: Math.round(boletusScore.suitabilityScore * 100),
             chanterelleSuitability: Math.round(chanterelleScore.suitabilityScore * 100)
           });
         }
       }
+
+      const forestCellCount = cells.filter(c => c.isForest).length;
+      const accurateForestPct = Math.round((forestCellCount / cells.length) * 100);
 
       // ─── STEP 5: Persist Baked Tile to Disk ──────────────────────────────
       const bakedTile: BakedTileData = {
@@ -200,7 +201,7 @@ export class BakeWorker {
         baseCellMeters: 250,
         rows,
         cols,
-        forestCoveragePct: landuse.forestCoveragePct,
+        forestCoveragePct: accurateForestPct,
         isEmpty: false,
         cells,
         bakedAt: new Date().toISOString()
@@ -214,7 +215,7 @@ export class BakeWorker {
       job.message = `Successfully baked ${cells.length} cells in ${totalDuration}ms. Saved to disk.`;
       job.completedAt = Date.now();
 
-      console.log(`[BakeWorker] [${tileId}] Successfully baked ${cells.length} cells in ${totalDuration}ms (Forest: ${landuse.forestCoveragePct}%, Soil pH: ${soilProps.soilPH})`);
+      console.log(`[BakeWorker] [${tileId}] Successfully baked ${cells.length} cells in ${totalDuration}ms (Forest cells: ${forestCellCount}/${cells.length}, ${accurateForestPct}% coverage)`);
       return bakedTile;
 
     } catch (err: any) {
