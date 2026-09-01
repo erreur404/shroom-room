@@ -26,11 +26,25 @@
   <div id="app">
     <!-- Header Controls -->
     <header class="app-header">
-      <div class="brand">
-        <div class="brand-icon">🍄</div>
-        <div class="brand-info">
-          <h1>SHROOM ROOM</h1>
-          <span class="brand-tagline">Habitat & Fruiting Prediction Engine</span>
+      <div class="header-top-row">
+        <div class="brand">
+          <div class="brand-icon">🍄</div>
+          <div class="brand-info">
+            <h1>SHROOM ROOM</h1>
+            <span class="brand-tagline">Habitat & Fruiting Prediction Engine</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button id="btn-show-safety" class="btn btn-secondary" title="View Species Identification & Safety Guide">
+            <span class="icon">📖</span> <span class="btn-text-label">Field Guide</span>
+          </button>
+          <button id="btn-refresh-weather" class="btn btn-secondary" title="Fetch live Open-Meteo weather data">
+            <span class="icon">🔄</span> <span class="btn-text-label">Weather</span>
+          </button>
+          <button id="btn-mode-waypoint" class="btn btn-waypoint-toggle" title="Toggle Waypoint Placing Mode">
+            <span class="icon">📍</span> <span class="btn-text-label">Waypoints</span>
+          </button>
         </div>
       </div>
 
@@ -41,23 +55,6 @@
             <select id="species-select" class="custom-select">
               <option value="boletus">Boletus edulis (King Bolete / Porcini)</option>
               <option value="cantharellus">Cantharellus cibarius (Chanterelle)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label for="region-select">Region Preset</label>
-          <div class="custom-select-wrapper">
-            <select id="region-select" class="custom-select">
-              <optgroup label="Niedersachsen (Germany)">
-                <option value="harz" selected>Harz National Park (Spruce/Pine)</option>
-                <option value="goehrde">Göhrde Forest (Old-growth Oak/Beech)</option>
-                <option value="lueneburg">Lüneburg Heath (Pine / Podzols)</option>
-              </optgroup>
-              <optgroup label="Bretagne (France)">
-                <option value="broceliande">Forêt de Brocéliande (Oak/Beech)</option>
-                <option value="huelgoat">Forêt de Huelgoat (Granite Acidic)</option>
-              </optgroup>
             </select>
           </div>
         </div>
@@ -78,18 +75,6 @@
           <input type="date" id="simulation-date" class="date-input" />
         </div>
       </div>
-
-      <div class="header-actions">
-        <button id="btn-show-safety" class="btn btn-secondary" title="View Species Identification & Safety Guide">
-          <span class="icon">📖</span> Field Guide
-        </button>
-        <button id="btn-refresh-weather" class="btn btn-secondary" title="Fetch live Open-Meteo weather data">
-          <span class="icon">🔄</span> Update Weather
-        </button>
-        <button id="btn-mode-waypoint" class="btn btn-primary" title="Toggle Waypoint Planner">
-          <span class="icon">📍</span> Waypoint Mode
-        </button>
-      </div>
     </header>
 
     <!-- Main Workspace -->
@@ -98,8 +83,29 @@
       <div class="map-container">
         <div id="map"></div>
 
+        <!-- Floating Map Action Buttons (FABs) -->
+        <div class="map-floating-controls">
+          <button id="btn-locate-me" class="btn-fab btn-locate" title="Find my current GPS location">
+            <span class="fab-icon">🎯</span>
+            <span class="fab-label">Locate</span>
+          </button>
+          <button id="btn-pin-gps" class="btn-fab btn-pin" title="Pin mushroom find at current location">
+            <span class="fab-icon">🍄</span>
+            <span class="fab-label">Pin Spot</span>
+          </button>
+          <button id="btn-mobile-layers" class="btn-fab btn-layers mobile-only" title="Toggle Layers & Legend">
+            <span class="fab-icon">🥞</span>
+            <span class="fab-label">Layers</span>
+          </button>
+          <button id="btn-mobile-drawer" class="btn-fab btn-trail mobile-only" title="Open Waypoints Trail Planner">
+            <span class="fab-icon">📍</span>
+            <span class="fab-label">Trail</span>
+            <span id="mobile-waypoint-badge" class="mini-count-badge hidden">0</span>
+          </button>
+        </div>
+
         <!-- Floating Legend & Layer Controller -->
-        <div class="map-overlay-legend glass-panel">
+        <div class="map-overlay-legend glass-panel" id="map-overlay-legend">
           <div class="legend-header">
             <h3>Visual Layer Synthesis</h3>
             <button id="btn-toggle-legend" class="btn-icon">▾</button>
@@ -108,6 +114,7 @@
             <div class="layer-toggle-row">
               <label class="layer-checkbox-label">
                 <input type="checkbox" id="toggle-suitability" checked />
+
                 <span class="color-badge badge-red"></span>
                 <span class="layer-title">Suitability Map (Red)</span>
               </label>
@@ -197,6 +204,9 @@
             </button>
           </div>
         </div>
+
+        <!-- App Toast Notification -->
+        <div id="app-toast" class="app-toast glass-panel hidden"></div>
       </div>
 
       <!-- Waypoint & Route Planning Drawer -->
@@ -206,7 +216,10 @@
             <h3>📍 Foraging Trail Planner</h3>
             <span id="waypoint-count-badge" class="count-badge">0 points</span>
           </div>
-          <button id="btn-clear-waypoints" class="btn-text" title="Clear all waypoints">Clear All</button>
+          <div class="drawer-header-actions">
+            <button id="btn-clear-waypoints" class="btn-text" title="Clear all waypoints">Clear</button>
+            <button id="btn-close-drawer" class="btn-icon" title="Close Drawer">×</button>
+          </div>
         </div>
 
         <div class="route-summary" id="route-summary">

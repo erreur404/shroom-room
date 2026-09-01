@@ -46,13 +46,27 @@ export class MapHarness {
     private callbacks: MapHarnessCallbacks
   ) { }
 
-  init(containerId: string, initialRegion: RegionPreset) {
+  init(containerId: string, initialCenter: [number, number] = [51.78, 10.45], initialZoom: number = 12) {
     // 1. Initialize Leaflet Map
     this.map = L.map(containerId, {
-      center: initialRegion.center,
-      zoom: initialRegion.zoom,
+      center: initialCenter,
+      zoom: initialZoom,
       zoomControl: true,
       attributionControl: false
+    });
+
+    // Save map position across sessions
+    this.map.on('moveend', () => {
+      try {
+        const center = this.map.getCenter();
+        const zoom = this.map.getZoom();
+        localStorage.setItem('shroom_room_map_pos', JSON.stringify({
+          center: [center.lat, center.lng],
+          zoom
+        }));
+      } catch (e) {
+        // ignore storage errors
+      }
     });
 
     // Add Attribution in bottom-right
@@ -357,33 +371,34 @@ export class MapHarness {
       const latLng: [number, number] = [wpt.lat, wpt.lon];
       latLngs.push(latLng);
 
+      const isFoundSpot = wpt.name.includes('🍄');
       const customIcon = L.divIcon({
-        className: 'custom-map-marker',
+        className: isFoundSpot ? 'custom-spot-marker' : 'custom-map-marker',
         html: `
           <div style="
-            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            background: ${isFoundSpot ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)'};
             color: #fff;
-            width: 28px;
-            height: 28px;
+            width: ${isFoundSpot ? '32px' : '28px'};
+            height: ${isFoundSpot ? '32px' : '28px'};
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 12px;
+            font-size: ${isFoundSpot ? '16px' : '12px'};
             border: 2px solid #ffffff;
-            box-shadow: 0 0 14px rgba(168, 85, 247, 0.8);
+            box-shadow: ${isFoundSpot ? '0 0 16px rgba(245, 158, 11, 0.9), 0 2px 8px rgba(0,0,0,0.5)' : '0 0 14px rgba(168, 85, 247, 0.8)'};
             transform: translate(-50%, -50%);
-          ">${index + 1}</div>
+          ">${isFoundSpot ? '🍄' : index + 1}</div>
         `,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
       });
 
       const marker = L.marker(latLng, { icon: customIcon });
       marker.bindPopup(`
-        <div style="font-family: inherit; font-size: 13px; color: #1e293b;">
-          <strong>📍 ${wpt.name}</strong><br/>
+        <div style="font-family: inherit; font-size: 13px; color: #1e293b; padding: 2px;">
+          <strong>${wpt.name}</strong><br/>
           <span>Fruiting Probability: <strong>${wpt.probabilityScore}%</strong></span><br/>
           <span>Suitability: ${wpt.suitabilityScore}% | Weather: ${wpt.weatherScore}%</span><br/>
           <span>Soil pH: ${wpt.soilPH} | 14d Rain: ${wpt.rain14DaysMm}mm</span>
@@ -398,4 +413,93 @@ export class MapHarness {
   flyToCoordinate(lat: number, lon: number) {
     this.map.panTo([lat, lon], { animate: true });
   }
+
+  private userLocationMarker?: L.Marker;
+  private userAccuracyCircle?: L.Circle;
+
+  /**
+   * Triggers device GPS geolocation, places pulsing marker with accuracy circle,
+   * and centers map on current location.
+   */
+  locateUser(
+    onSuccess?: (coords: { lat: number; lon: number; accuracy: number }) => void,
+    onError?: (errorMsg: string) => void
+  ) {
+    if (!navigator.geolocation) {
+      onError?.('Geolocation is not supported by your device/browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+
+        if (this.userLocationMarker) {
+          this.map.removeLayer(this.userLocationMarker);
+        }
+        if (this.userAccuracyCircle) {
+          this.map.removeLayer(this.userAccuracyCircle);
+        }
+
+        const gpsIcon = L.divIcon({
+          className: 'gps-user-marker-wrapper',
+          html: `
+            <div class="gps-user-marker">
+              <div class="gps-pulse"></div>
+              <div class="gps-core"></div>
+            </div>
+          `,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+
+        this.userAccuracyCircle = L.circle([lat, lon], {
+          radius: Math.max(accuracy, 20),
+          color: '#3b82f6',
+          fillColor: '#3b82f6',
+          fillOpacity: 0.15,
+          weight: 1.5,
+          dashArray: '4, 4'
+        }).addTo(this.map);
+
+        this.userLocationMarker = L.marker([lat, lon], { icon: gpsIcon, zIndexOffset: 2000 })
+          .addTo(this.map)
+          .bindPopup(`
+            <div style="font-family: inherit; font-size: 13px; color: #0f172a; padding: 2px;">
+              <strong>📍 Current GPS Location</strong><br/>
+              <span>Accuracy: &plusmn;${Math.round(accuracy)} meters</span><br/>
+              <span style="font-size: 11px; color: #64748b;">${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+            </div>
+          `);
+
+        this.map.flyTo([lat, lon], Math.max(this.map.getZoom(), 14), {
+          animate: true,
+          duration: 1.2
+        });
+
+        // Trigger environment inspection at current GPS coordinate
+        this.updateViewportDataAndRender();
+        onSuccess?.({ lat, lon, accuracy });
+      },
+      (err) => {
+        let msg = 'Unable to determine GPS location.';
+        if (err.code === 1) msg = 'Location access denied. Please allow GPS permissions in your browser settings.';
+        else if (err.code === 2) msg = 'Location position unavailable. Check device GPS.';
+        else if (err.code === 3) msg = 'GPS location request timed out.';
+        onError?.(msg);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 10000
+      }
+    );
+  }
+
+  invalidateSize() {
+    this.map?.invalidateSize();
+  }
 }
+

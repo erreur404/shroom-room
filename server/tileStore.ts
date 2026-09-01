@@ -5,7 +5,7 @@ import { BakedCell, BakedTileData, parseTileBounds } from './tileConfig';
 export class TileStore {
   private baseDir: string;
 
-  constructor(baseDir = path.resolve(process.cwd(), 'data', 'tiles')) {
+  constructor(baseDir = process.env.DATA_DIR || path.resolve(process.cwd(), 'data', 'tiles')) {
     this.baseDir = baseDir;
     if (!fs.existsSync(this.baseDir)) {
       fs.mkdirSync(this.baseDir, { recursive: true });

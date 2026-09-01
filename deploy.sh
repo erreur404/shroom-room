@@ -16,8 +16,8 @@ echo "=========================================================="
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# 1. Build frontend locally
-echo "[1/4] Building frontend assets (vite build)..."
+# 1. Build frontend and backend bundle locally
+echo "[1/4] Building production assets (Vite + esbuild)..."
 npm run build
 
 # 2. Prepare remote directory
@@ -33,33 +33,33 @@ tar --exclude='node_modules' \
     --exclude='.vscode' \
     --exclude='deploy.tgz' \
     --exclude='*.log' \
+    --exclude='data' \
     -czf deploy.tgz .
 
 scp deploy.tgz "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"
 rm -f deploy.tgz
 
-# 4. Extract, install dependencies, and start with PM2 in production mode
-echo "[4/4] Extracting, installing dependencies, and restarting production server on remote host..."
+# 4. Extract, install production dependencies, and start with PM2 in production mode
+echo "[4/4] Extracting, installing production dependencies, and restarting pure Node server on remote host..."
 ssh "${REMOTE_USER}@${REMOTE_HOST}" "bash -s" << 'EOF'
   set -euo pipefail
   cd ~/shroom-room
   tar -xzf deploy.tgz
   rm -f deploy.tgz
 
-  # Install dependencies
-  npm install
+  # Install production dependencies only (no dev bundlers, tsx, or compilers)
+  npm install --omit=dev
 
   # Ensure PM2 is available
   if ! command -v pm2 &> /dev/null; then
     sudo npm install -g pm2
   fi
 
-  # Start/Restart service with PM2 in production mode
+  # Start/Restart pure Node service with PM2 in production mode
   export PORT=3002
   export NODE_ENV=production
   pm2 delete shroom-room 2>/dev/null || true
-  pm2 start ./node_modules/.bin/tsx --name "shroom-room" --time -- server/index.ts
-
+  pm2 start dist/index.js --name "shroom-room" --time --env NODE_ENV=production
 
   # Save PM2 state for automatic restart on reboot
   pm2 save
@@ -71,7 +71,7 @@ ssh "${REMOTE_USER}@${REMOTE_HOST}" "bash -s" << 'EOF'
   if curl -s -f http://localhost:3002/api/health > /dev/null; then
     echo "✅ Health check PASSED: Server is running on port 3002!"
   else
-    echo "⚠️ Health check check: PM2 logs:"
+    echo "⚠️ Health check warning: PM2 logs:"
     pm2 logs shroom-room --lines 15 --nostream
   fi
 EOF

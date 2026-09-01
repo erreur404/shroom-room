@@ -1,9 +1,7 @@
-import { BasemapId, RegionId, SpeciesId } from '../types';
-import { REGION_PRESETS } from '../services/habitatDataService';
+import { BasemapId, SpeciesId } from '../types';
 
 export interface HeaderBarCallbacks {
   onSpeciesChange: (speciesId: SpeciesId) => void;
-  onRegionChange: (regionId: RegionId) => void;
   onBasemapChange: (basemapId: BasemapId) => void;
   onDateChange: (dateStr: string) => void;
   onRefreshWeather: () => void;
@@ -12,7 +10,6 @@ export interface HeaderBarCallbacks {
 
 export class HeaderBar {
   private speciesSelect: HTMLSelectElement;
-  private regionSelect: HTMLSelectElement;
   private basemapSelect: HTMLSelectElement;
   private dateInput: HTMLInputElement;
   private refreshWeatherBtn: HTMLButtonElement;
@@ -22,7 +19,6 @@ export class HeaderBar {
 
   constructor(private callbacks: HeaderBarCallbacks) {
     this.speciesSelect = document.getElementById('species-select') as HTMLSelectElement;
-    this.regionSelect = document.getElementById('region-select') as HTMLSelectElement;
     this.basemapSelect = document.getElementById('basemap-select') as HTMLSelectElement;
     this.dateInput = document.getElementById('simulation-date') as HTMLInputElement;
     this.refreshWeatherBtn = document.getElementById('btn-refresh-weather') as HTMLButtonElement;
@@ -39,14 +35,6 @@ export class HeaderBar {
     this.speciesSelect.addEventListener('change', () => {
       const species = this.speciesSelect.value as SpeciesId;
       this.callbacks.onSpeciesChange(species);
-    });
-
-    this.regionSelect.addEventListener('change', () => {
-      const regionId = this.regionSelect.value as RegionId;
-      const preset = REGION_PRESETS[regionId];
-      if (preset) {
-        this.callbacks.onRegionChange(regionId);
-      }
     });
 
     this.basemapSelect.addEventListener('change', () => {
@@ -71,9 +59,5 @@ export class HeaderBar {
 
   setSpecies(speciesId: SpeciesId) {
     this.speciesSelect.value = speciesId;
-  }
-
-  setRegion(regionId: RegionId) {
-    this.regionSelect.value = regionId;
   }
 }

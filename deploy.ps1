@@ -15,11 +15,11 @@ Write-Host "==========================================================" -Foregro
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
 
-# 1. Build frontend locally
-Write-Host "[1/4] Building frontend assets (npm run build)..." -ForegroundColor Yellow
+# 1. Build frontend and backend bundle locally
+Write-Host "[1/4] Building production assets (Vite + esbuild)..." -ForegroundColor Yellow
 npm.cmd run build
 if ($LASTEXITCODE -ne 0) {
-    throw "Frontend build failed!"
+    throw "Production build failed!"
 }
 
 # 2. Prepare remote directory
@@ -35,20 +35,22 @@ tar --exclude='node_modules' `
     --exclude='.vscode' `
     --exclude='deploy.tgz' `
     --exclude='*.log' `
+    --exclude='data' `
     -czf deploy.tgz .
 
 scp deploy.tgz "${RemoteUser}@${RemoteHost}:${RemoteDir}/"
 Remove-Item -Path deploy.tgz -Force -ErrorAction SilentlyContinue
 
-# 4. Extract, install dependencies, and start on remote host
-Write-Host "[4/4] Extracting, installing dependencies, and restarting production server on remote host..." -ForegroundColor Yellow
+# 4. Extract, install production dependencies, and start pure Node on remote host
+Write-Host "[4/4] Extracting, installing production dependencies, and restarting pure Node server on remote host..." -ForegroundColor Yellow
 $remoteCommands = @'
 set -euo pipefail
 cd ~/shroom-room
 tar -xzf deploy.tgz
 rm -f deploy.tgz
 
-npm install
+# Install production dependencies only (no dev bundlers, tsx, or compilers)
+npm install --omit=dev
 
 if ! command -v pm2 &> /dev/null; then
   sudo npm install -g pm2
@@ -57,7 +59,7 @@ fi
 export PORT=3002
 export NODE_ENV=production
 pm2 delete shroom-room 2>/dev/null || true
-pm2 start ./node_modules/.bin/tsx --name "shroom-room" --time -- server/index.ts
+pm2 start dist/index.js --name "shroom-room" --time --env NODE_ENV=production
 pm2 save
 
 sleep 2

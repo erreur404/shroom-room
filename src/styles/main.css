@@ -221,6 +221,30 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
 }
 
+/* High-contrast Waypoint Toggle (Gray when Inactive, Vivid Violet when Active) */
+.btn-waypoint-toggle {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-waypoint-toggle:hover {
+  background: #28354f !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.btn-waypoint-toggle.active {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%) !important;
+  color: #ffffff !important;
+  border-color: #c084fc !important;
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.9), 0 4px 14px rgba(124, 58, 237, 0.6) !important;
+  transform: translateY(-1px);
+  font-weight: 800;
+}
+
 .btn-secondary {
   background: var(--bg-tertiary);
   color: var(--text-primary);
@@ -915,4 +939,428 @@ input[type="range"] {
 .baking-status-tooltip::before {
   border-top-color: rgba(15, 23, 42, 0.95) !important;
 }
+
+/* ==========================================================================
+   GPS Location Marker & Pulse Animations
+   ========================================================================== */
+.gps-user-marker-wrapper {
+  background: transparent !important;
+  border: none !important;
+}
+
+.gps-user-marker {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gps-core {
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  border: 2.5px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.9), 0 2px 4px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.gps-pulse {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.45);
+  animation: gps-wave 2s infinite ease-out;
+  z-index: 1;
+}
+
+@keyframes gps-wave {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Floating Action Buttons (FABs)
+   ========================================================================== */
+.map-floating-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  pointer-events: auto;
+}
+
+.btn-fab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  transition: all var(--transition-fast);
+  position: relative;
+  user-select: none;
+}
+
+.btn-fab:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-fab:active {
+  transform: scale(0.96);
+}
+
+.btn-locate {
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.btn-locate:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.45);
+}
+
+.btn-locate.locating {
+  animation: pulse-slow 1s infinite;
+  border-color: #60a5fa;
+}
+
+.btn-locate.located {
+  border-color: #10b981;
+  background: rgba(6, 78, 59, 0.85);
+}
+
+.btn-fab.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border-color: #c084fc;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.5);
+}
+
+.mini-count-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.1rem 0.4rem;
+  border-radius: 9999px;
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  border: 1.5px solid #0f172a;
+}
+
+/* ==========================================================================
+   Toast Notifications
+   ========================================================================== */
+.app-toast {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  z-index: 1500;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-full);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  max-width: 90vw;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.app-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.drawer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Mobile Visibility Utilities */
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: inherit !important;
+}
+
+/* ==========================================================================
+   RESPONSIVE LAYOUT (Mobile: Galaxy S22, Pixel 8, iPhone, Tablets)
+   ========================================================================== */
+@media (max-width: 960px) {
+  :root {
+    --header-height: 58px;
+    --drawer-width: 100vw;
+  }
+
+  .mobile-only {
+    display: inline-flex !important;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .btn-text-label {
+    display: none;
+  }
+
+  /* Compact Header */
+  .app-header {
+    padding: 0 0.85rem;
+    gap: 0.65rem;
+    position: relative;
+  }
+
+  .brand {
+    min-width: unset;
+    gap: 0.5rem;
+  }
+
+  .brand-icon {
+    font-size: 1.5rem;
+  }
+
+  .brand-info h1 {
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+  }
+
+  .brand-tagline {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 0.4rem;
+  }
+
+  .header-actions .btn {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  /* Slide-Down Controls Shelf on Mobile */
+  .controls-bar {
+    position: absolute;
+    top: var(--header-height);
+    left: 0;
+    width: 100vw;
+    background: rgba(11, 15, 25, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-glass);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    z-index: 999;
+    transform: translateY(-110%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  }
+
+  .controls-bar.mobile-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .controls-bar .control-group:first-child {
+    grid-column: span 2;
+  }
+
+  .control-group {
+    width: 100%;
+  }
+
+  .custom-select, .date-input {
+    width: 100%;
+    height: 42px;
+    font-size: 0.82rem;
+    padding: 0.45rem 1.75rem 0.45rem 0.65rem;
+  }
+
+  /* Floating FAB Controls on Mobile (Positioned at TOP right so bottom sheets/drawers do not collide) */
+  .map-floating-controls {
+    top: 0.75rem;
+    bottom: auto;
+    right: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .btn-fab {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.78rem;
+  }
+
+  /* Mobile Legend Panel (Bottom Drawer / Sheet) */
+  .map-overlay-legend {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    max-height: 70vh;
+    overflow-y: auto;
+    transform: translateY(110%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+    padding: 1.25rem 1rem 2rem 1rem;
+    z-index: 800;
+  }
+
+  .map-overlay-legend.mobile-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Mobile Telemetry HUD (Bottom Popover) */
+  .telemetry-hud {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 1rem;
+    width: auto;
+    max-width: calc(100vw - 1rem);
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    z-index: 850;
+  }
+
+  .hud-scores-grid {
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .score-card {
+    padding: 0.45rem;
+  }
+
+  .score-card .score-value {
+    font-size: 1.15rem;
+  }
+
+  .hud-details-list {
+    padding: 0.5rem 0.65rem;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  /* Mobile Waypoints Drawer */
+  .sidebar-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    z-index: 1200;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(11, 15, 25, 0.98);
+  }
+
+  .sidebar-drawer.open {
+    transform: translateX(0);
+  }
+
+  .drawer-footer {
+    padding-bottom: 2rem;
+  }
+
+  /* Modals */
+  .modal-card {
+    width: 95vw;
+    max-height: 90vh;
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    padding: 1rem 1.15rem;
+  }
+
+  .modal-body {
+    padding: 1.15rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .controls-bar {
+    grid-template-columns: 1fr;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+
+  .brand-icon {
+    font-size: 1.3rem;
+  }
+
+  .brand-info h1 {
+    font-size: 0.88rem;
+  }
+
+  .map-floating-controls {
+    top: 0.65rem;
+    bottom: auto;
+    right: 0.65rem;
+    gap: 0.45rem;
+  }
+
+  .btn-fab .fab-label {
+    display: none;
+  }
+
+  .btn-fab {
+    padding: 0.65rem;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+  }
+
+  .btn-fab .fab-icon {
+    font-size: 1.25rem;
+  }
+}
+
 

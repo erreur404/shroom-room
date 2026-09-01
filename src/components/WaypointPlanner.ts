@@ -7,6 +7,7 @@ export interface WaypointPlannerCallbacks {
 }
 
 export class WaypointPlanner {
+  private static STORAGE_KEY = 'shroom_room_waypoints_v1';
   private waypoints: ForagingWaypoint[] = [];
 
   constructor(
@@ -16,22 +17,54 @@ export class WaypointPlanner {
     private avgProbEl: HTMLElement,
     private countBadgeEl: HTMLElement,
     private callbacks: WaypointPlannerCallbacks
-  ) {}
+  ) {
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(WaypointPlanner.STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          this.waypoints = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[WaypointPlanner] Error loading from localStorage', e);
+    }
+  }
+
+  private saveToStorage() {
+    try {
+      localStorage.setItem(WaypointPlanner.STORAGE_KEY, JSON.stringify(this.waypoints));
+    } catch (e) {
+      console.warn('[WaypointPlanner] Error saving to localStorage', e);
+    }
+  }
 
   addWaypoint(wpt: ForagingWaypoint) {
     this.waypoints.push(wpt);
+    this.saveToStorage();
     this.render();
     this.callbacks.onWaypointsChanged(this.waypoints);
   }
 
   removeWaypoint(id: string) {
     this.waypoints = this.waypoints.filter(w => w.id !== id);
+    this.saveToStorage();
     this.render();
     this.callbacks.onWaypointsChanged(this.waypoints);
   }
 
   clearAll() {
     this.waypoints = [];
+    this.saveToStorage();
+    this.render();
+    this.callbacks.onWaypointsChanged(this.waypoints);
+  }
+
+  initRender() {
     this.render();
     this.callbacks.onWaypointsChanged(this.waypoints);
   }

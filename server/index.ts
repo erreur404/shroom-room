@@ -12,10 +12,14 @@ import { BakeWorker } from './bakeWorker';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const distPath = path.resolve(__dirname, '../dist');
+// Resolve static dist assets whether executing from dist/index.js (production) or server/index.ts (development)
+const distPath = fs.existsSync(path.join(__dirname, 'index.html'))
+  ? __dirname
+  : path.resolve(__dirname, '../dist');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+const isProd = process.env.NODE_ENV === 'production';
 
 app.use(cors());
 app.use(express.json());

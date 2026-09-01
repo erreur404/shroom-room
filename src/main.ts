@@ -1,7 +1,7 @@
-import { EnvironmentalInputs, ForagingWaypoint, RegionId, ScoringResult, SpeciesId } from './types';
+import { EnvironmentalInputs, ForagingWaypoint, ScoringResult, SpeciesId } from './types';
 import { ScoringEngine } from './scoring/pipelines';
 import { WeatherService } from './services/weatherService';
-import { HabitatDataService, REGION_PRESETS, SPECIES_DETAILS } from './services/habitatDataService';
+import { HabitatDataService, SPECIES_DETAILS } from './services/habitatDataService';
 import { getTileId } from '../server/tileConfig';
 import { MapHarness } from './components/MapHarness';
 import { WaypointPlanner } from './components/WaypointPlanner';
@@ -17,7 +17,6 @@ class ShroomRoomApp {
   private headerBar!: HeaderBar;
 
   private currentSpecies: SpeciesId = 'boletus';
-  private currentRegion: RegionId = 'harz';
   private currentDateStr: string = new Date().toISOString().split('T')[0];
 
   // Active HUD Telemetry State
@@ -27,9 +26,12 @@ class ShroomRoomApp {
     this.initHUD();
     this.initLegendAndLayers();
     this.initSafetyModal();
-    this.initWaypointPlanner();
     this.initMap();
+    this.initWaypointPlanner();
     this.initHeader();
+    this.initLocateMe();
+    this.initMobileUI();
+    this.initResizeListener();
   }
 
   private initHeader() {
@@ -40,13 +42,6 @@ class ShroomRoomApp {
         if (this.lastClickedEnv) {
           const score = this.scoringEngine.evaluate(this.currentSpecies, this.lastClickedEnv);
           this.updateHUD(this.lastClickedEnv, score);
-        }
-      },
-      onRegionChange: (regionId) => {
-        this.currentRegion = regionId;
-        const preset = REGION_PRESETS[regionId];
-        if (preset) {
-          this.mapHarness.setRegion(preset);
         }
       },
       onBasemapChange: (basemapId) => {
@@ -70,7 +65,21 @@ class ShroomRoomApp {
   }
 
   private initMap() {
-    const initialRegion = REGION_PRESETS[this.currentRegion];
+    let initialCenter: [number, number] = [51.78, 10.45];
+    let initialZoom = 12;
+
+    try {
+      const savedPos = localStorage.getItem('shroom_room_map_pos');
+      if (savedPos) {
+        const parsed = JSON.parse(savedPos);
+        if (parsed && Array.isArray(parsed.center) && typeof parsed.zoom === 'number') {
+          initialCenter = parsed.center as [number, number];
+          initialZoom = parsed.zoom;
+        }
+      }
+    } catch (e) {
+      // fallback to default
+    }
 
     this.mapHarness = new MapHarness(
       this.scoringEngine,
@@ -90,7 +99,7 @@ class ShroomRoomApp {
       }
     );
 
-    this.mapHarness.init('map', initialRegion);
+    this.mapHarness.init('map', initialCenter, initialZoom);
   }
 
   private setWeatherAvailability(available: boolean) {
@@ -142,7 +151,14 @@ class ShroomRoomApp {
           this.mapHarness.flyToCoordinate(wpt.lat, wpt.lon);
         },
         onWaypointsChanged: (waypoints) => {
-          this.mapHarness.renderWaypoints(waypoints);
+          if (this.mapHarness) {
+            this.mapHarness.renderWaypoints(waypoints);
+          }
+          const miniBadge = document.getElementById('mobile-waypoint-badge');
+          if (miniBadge) {
+            miniBadge.textContent = `${waypoints.length}`;
+            miniBadge.classList.toggle('hidden', waypoints.length === 0);
+          }
         }
       }
     );
@@ -156,13 +172,16 @@ class ShroomRoomApp {
     // Clear All Button
     const clearBtn = document.getElementById('btn-clear-waypoints') as HTMLButtonElement;
     clearBtn.addEventListener('click', () => {
-      if (confirm('Clear all waypoints along this foraging route?')) {
+      if (confirm('Clear all saved waypoints along this foraging route?')) {
         this.waypointPlanner.clearAll();
       }
     });
+
+    // Render persisted waypoints from localStorage on initial load
+    this.waypointPlanner.initRender();
   }
 
-  private async addWaypointAt(lat: number, lon: number) {
+  private async addWaypointAt(lat: number, lon: number, isFoundSpot = false) {
     let env = this.habitatService.getEnvironmentalInputs(
       lat,
       lon,
@@ -182,21 +201,32 @@ class ShroomRoomApp {
       );
     }
 
-    if (!env) return;
-
-    const score = this.scoringEngine.evaluate(this.currentSpecies, env);
     const count = this.waypointPlanner.getWaypoints().length + 1;
+    const speciesName = this.currentSpecies === 'boletus' ? 'Porcini' : 'Chanterelle';
+    const name = isFoundSpot
+      ? `🍄 ${speciesName} Spot #${count}`
+      : `📍 Target #${count} (${speciesName})`;
+
+    const score = env
+      ? this.scoringEngine.evaluate(this.currentSpecies, env)
+      : {
+          suitabilityScore: 0.5,
+          weatherScore: 0.5,
+          overallProbability: 0.5,
+          isSeasonActive: true,
+          factors: { pHScore: 0.5, hostTreeScore: 0.5, rainScore: 0.5, tempScore: 0.5, tempDrop: 0 }
+        };
 
     const newWpt: ForagingWaypoint = {
       id: `wpt-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      name: `Hotspot #${count} (${this.currentSpecies === 'boletus' ? 'Porcini' : 'Chanterelle'})`,
+      name,
       lat,
       lon,
       elevationMeters: env?.elevationMeters,
-      soilPH: env?.soilPH,
-      dominantTree: this.habitatService.getHostTreeName(env.hostTreeGenus),
-      rain14DaysMm: env.rain14DaysMm,
-      currentSoilTempC: env.currentSoilTempC,
+      soilPH: env?.soilPH ?? 5.5,
+      dominantTree: env ? this.habitatService.getHostTreeName(env.hostTreeGenus) : 'Forest',
+      rain14DaysMm: env?.rain14DaysMm ?? 0,
+      currentSoilTempC: env?.currentSoilTempC ?? 15,
       speciesId: this.currentSpecies,
       suitabilityScore: Math.round(score.suitabilityScore * 100),
       weatherScore: Math.round(score.weatherScore * 100),
@@ -205,7 +235,9 @@ class ShroomRoomApp {
     };
 
     this.waypointPlanner.addWaypoint(newWpt);
-    this.updateHUD(env, score);
+    if (env) {
+      this.updateHUD(env, score);
+    }
   }
 
   private initHUD() {
@@ -367,6 +399,95 @@ class ShroomRoomApp {
       }
     });
   }
+
+  private initLocateMe() {
+    const locateBtn = document.getElementById('btn-locate-me') as HTMLButtonElement;
+    if (!locateBtn) return;
+
+    locateBtn.addEventListener('click', () => {
+      locateBtn.classList.add('locating');
+      this.showToast('🎯 Locating your GPS position...', 4000);
+
+      this.mapHarness.locateUser(
+        (coords) => {
+          locateBtn.classList.remove('locating');
+          locateBtn.classList.add('located');
+          this.showToast(`📍 Found your location (±${Math.round(coords.accuracy)}m)`, 3500);
+        },
+        (errMsg) => {
+          locateBtn.classList.remove('locating');
+          this.showToast(`⚠️ ${errMsg}`, 5000);
+        }
+      );
+    });
+  }
+
+  private initMobileUI() {
+    const mobileLayersBtn = document.getElementById('btn-mobile-layers') as HTMLButtonElement;
+    const legendOverlay = document.getElementById('map-overlay-legend') as HTMLElement;
+    const mobileDrawerBtn = document.getElementById('btn-mobile-drawer') as HTMLButtonElement;
+    const waypointDrawer = document.getElementById('waypoint-drawer') as HTMLElement;
+    const closeDrawerBtn = document.getElementById('btn-close-drawer') as HTMLButtonElement;
+
+    // Toggle Layers / Legend on Mobile
+    mobileLayersBtn?.addEventListener('click', () => {
+      legendOverlay?.classList.toggle('mobile-open');
+      mobileLayersBtn.classList.toggle('active', legendOverlay?.classList.contains('mobile-open'));
+    });
+
+    // Toggle Waypoints Drawer on Mobile
+    mobileDrawerBtn?.addEventListener('click', () => {
+      waypointDrawer?.classList.toggle('open');
+      mobileDrawerBtn.classList.toggle('active', waypointDrawer?.classList.contains('open'));
+      setTimeout(() => this.mapHarness.invalidateSize(), 300);
+    });
+
+    // Close Waypoint Drawer
+    closeDrawerBtn?.addEventListener('click', () => {
+      waypointDrawer?.classList.remove('open');
+      mobileDrawerBtn?.classList.remove('active');
+      setTimeout(() => this.mapHarness.invalidateSize(), 300);
+    });
+
+    // 1-Tap Pin Current GPS Location Find
+    const pinGpsBtn = document.getElementById('btn-pin-gps') as HTMLButtonElement;
+    pinGpsBtn?.addEventListener('click', () => {
+      this.showToast('🎯 Getting GPS to pin your find...', 3000);
+      this.mapHarness.locateUser(
+        (coords) => {
+          this.addWaypointAt(coords.lat, coords.lon, true);
+          this.showToast(`🍄 Pinned spot at GPS (${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)})! Saved to device.`, 4000);
+        },
+        (err) => {
+          this.showToast(`⚠️ ${err}`, 5000);
+        }
+      );
+    });
+  }
+
+  private initResizeListener() {
+    window.addEventListener('resize', () => {
+      this.mapHarness.invalidateSize();
+    });
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.mapHarness.invalidateSize(), 200);
+    });
+  }
+
+  private toastTimeout?: any;
+  showToast(message: string, durationMs: number = 3500) {
+    const toast = document.getElementById('app-toast') as HTMLElement;
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+    toast.classList.add('visible');
+
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.classList.add('hidden'), 300);
+    }, durationMs);
+  }
 }
 
 // Bootstrap on DOM Loaded
@@ -374,3 +495,4 @@ window.addEventListener('DOMContentLoaded', () => {
   const app = new ShroomRoomApp();
   app.init();
 });
+
