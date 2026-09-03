@@ -20,6 +20,13 @@ export class TileStore {
     return fs.existsSync(this.getFilePath(tileId));
   }
 
+  listBakedTileIds(): string[] {
+    if (!fs.existsSync(this.baseDir)) return [];
+    return fs.readdirSync(this.baseDir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => f.replace('.json', ''));
+  }
+
   loadTile(tileId: string): BakedTileData | null {
     const filePath = this.getFilePath(tileId);
     if (!fs.existsSync(filePath)) {

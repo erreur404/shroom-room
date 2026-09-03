@@ -69,6 +69,9 @@ app.get('/api/tiles/status', (req, res) => {
         status: 'baked',
         isEmpty: tileData?.isEmpty || false,
         forestCoveragePct: tileData?.forestCoveragePct || 0,
+        oakCoveragePct: tileData?.oakCoveragePct || 0,
+        oakCellsCount: tileData?.oakCellsCount || 0,
+        genusDistribution: tileData?.genusDistribution,
         bakedAt: tileData?.bakedAt
       };
     } else {
@@ -102,6 +105,38 @@ app.get('/api/tiles/status', (req, res) => {
 });
 
 /**
+ * Searches and ranks all baked tiles by highest Oak (Quercus) abundance
+ */
+app.get('/api/search/oaks', (req, res) => {
+  const allTileIds = tileStore.listBakedTileIds();
+  const results = [];
+
+  for (const tid of allTileIds) {
+    const tile = tileStore.loadTile(tid);
+    if (tile && !tile.isEmpty && (tile.oakCellsCount || 0) > 0) {
+      results.push({
+        tileId: tid,
+        oakCellsCount: tile.oakCellsCount || 0,
+        oakCoveragePct: tile.oakCoveragePct || 0,
+        forestCoveragePct: tile.forestCoveragePct || 0,
+        center: {
+          lat: Number(((tile.bounds.south + tile.bounds.north) / 2).toFixed(4)),
+          lon: Number(((tile.bounds.west + tile.bounds.east) / 2).toFixed(4))
+        },
+        genusDistribution: tile.genusDistribution,
+        bakedAt: tile.bakedAt
+      });
+    }
+  }
+
+  results.sort((a, b) => (b.oakCellsCount || 0) - (a.oakCellsCount || 0));
+  res.json({
+    totalOakTiles: results.length,
+    oakHotspots: results
+  });
+});
+
+/**
  * Triggers progressive bake for a specific Tile ID
  */
 app.post('/api/tiles/bake', async (req, res) => {
@@ -119,7 +154,7 @@ app.post('/api/tiles/bake', async (req, res) => {
 
     // Launch bake job in background
     bakeWorker.bakeTile(tileId).catch(err => {
-      console.error(`[Server] [${tileId}] Background bake failed:`, err?.message || err);
+      console.error(`[Server] Background bake job failed for ${tileId}:`, err);
     });
 
     const job = bakeWorker.getJobState(tileId);

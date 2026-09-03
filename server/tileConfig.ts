@@ -19,6 +19,7 @@ export interface BakedCell {
   isForest: boolean;
   boletusSuitability: number;     // 0..100
   chanterelleSuitability: number; // 0..100
+  treeSource?: 'gbif' | 'osm' | 'fallback';
 }
 
 export interface BakedTileData {
@@ -30,6 +31,10 @@ export interface BakedTileData {
   forestCoveragePct: number; // 0..100
   isEmpty: boolean; // true if 0% forest
   cells: BakedCell[];
+  genusDistribution?: Record<number, number>;
+  oakCoveragePct?: number;
+  oakCellsCount?: number;
+  dominantGenus?: number;
   fused1000m?: {
     rows: number;
     cols: number;

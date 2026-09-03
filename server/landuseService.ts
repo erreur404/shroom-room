@@ -19,8 +19,8 @@ const OVERPASS_ENDPOINTS = [
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
 ];
 
-function parseGenusFromOSMTags(tags: Record<string, string> | undefined, lat: number, lon: number): number {
-  if (!tags) return defaultGenusByRegion(lat, lon);
+function parseGenusFromOSMTags(tags: Record<string, string> | undefined): number {
+  if (!tags) return -1;
 
   const str = `${tags.species || ''} ${tags.genus || ''} ${tags.trees || ''} ${tags.taxon || ''} ${tags.name || ''} ${tags.description || ''}`.toLowerCase();
 
@@ -42,52 +42,20 @@ function parseGenusFromOSMTags(tags: Record<string, string> | undefined, lat: nu
   if (str.includes('larix') || str.includes('larch') || str.includes('mélèze') || str.includes('meleze') || str.includes('laerche') || str.includes('lärche')) {
     return 0; // Larch (Larix)
   }
-  if (str.includes('hutewald') || str.includes('schäferei') || str.includes('schaferei')) {
-    // Historic wood pastures in Northern Germany (e.g. Neustädter Holz) are mixed Oak & Scots Pine
-    return (lat > 52.0 && lon > 9.5 && lon < 10.5) ? 4 : 3;
-  }
 
   const leafType = (tags['leaf_type'] || '').toLowerCase();
   const wood = (tags['wood'] || '').toLowerCase();
 
   if (leafType === 'needleleaved' || wood === 'conifer') {
-    return (lat > 51.5 && lon > 10.0) ? 1 : 2; // Spruce in high elevation/east, Pine elsewhere
+    return 5; // Generic Conifer (unless specified by GBIF or detailed survey)
   }
   if (leafType === 'broadleaved' || wood === 'deciduous') {
-    // Temperate Atlantic / Western Europe deciduous woods are primarily Oak & Beech
-    return (Math.abs(Math.sin(lat * 123.45 + lon * 678.9)) > 0.4) ? 4 : 3;
-  }
-  if (leafType === 'mixed') {
-    // In Lüneburg Heath & Aller valley sand dunes (Celle, Gifhorn), mixed stands are Oak & Scots Pine
-    if (lat >= 52.4 && lat <= 53.4 && lon >= 9.6 && lon <= 10.8) {
-      return (Math.abs(Math.cos(lat * 89.1 + lon * 23.4)) > 0.4) ? 4 : 2; // Oak (4) & Pine (2)
-    }
-    return (Math.abs(Math.cos(lat * 89.1 + lon * 23.4)) > 0.5) ? 4 : 2;
+    return 6; // Generic Deciduous (unless specified by GBIF or detailed survey)
   }
 
-  return defaultGenusByRegion(lat, lon);
+  return -1; // Unknown / unassigned in OSM
 }
 
-function defaultGenusByRegion(lat: number, lon: number): number {
-  if (lat >= 52.50 && lat <= 52.80 && lon >= 9.85 && lon <= 10.25) {
-    // Celle / Aller valley / Südheide dunes (Neustädter Holz): Scots Pine & Oak
-    return (Math.abs(Math.sin(lat * 45 + lon * 78)) > 0.4) ? 2 : 4;
-  }
-  if (lat >= 51.70 && lat <= 51.90 && lon >= 10.35 && lon <= 10.65) {
-    return (lat > 51.78) ? 1 : 3; // Harz: Spruce / Beech
-  }
-  if (lat >= 53.08 && lat <= 53.22 && lon >= 10.75 && lon <= 10.95) {
-    return (lon > 10.85) ? 4 : 3; // Göhrde: Oak / Beech
-  }
-  if (lat >= 53.10 && lat <= 53.25 && lon >= 9.85 && lon <= 10.15) {
-    return 2; // Lüneburg: Scots Pine
-  }
-  if (lat >= 47.5 && lat <= 49.0 && lon >= -4.8 && lon <= -1.0) {
-    // Brittany / Armorican Massif (e.g. Brocéliande, Huelgoat, Léguer valley)
-    return (Math.abs(Math.sin(lat * 77 + lon * 33)) > 0.35) ? 4 : 3; // Oak (4) & Beech (3)
-  }
-  return 4; // Default Oak
-}
 
 /**
  * Reconstructs closed boundary polygon rings from an OSM multipolygon relation.
@@ -256,7 +224,7 @@ export class LanduseService {
         for (const el of elements) {
           if (el.type === 'way' && el.geometry && el.geometry.length >= 3) {
             const ring: [number, number][] = el.geometry.map((pt: any) => [pt.lat, pt.lon]);
-            const dominantGenus = parseGenusFromOSMTags(el.tags, ring[0][0], ring[0][1]);
+            const dominantGenus = parseGenusFromOSMTags(el.tags);
             forestPolygons.push(ring);
             forestFeatures.push({
               ring,
@@ -266,7 +234,7 @@ export class LanduseService {
           } else if (el.type === 'relation') {
             const rings = assembleRingsFromRelation(el);
             for (const ring of rings) {
-              const dominantGenus = parseGenusFromOSMTags(el.tags, ring[0][0], ring[0][1]);
+              const dominantGenus = parseGenusFromOSMTags(el.tags);
               forestPolygons.push(ring);
               forestFeatures.push({
                 ring,
@@ -317,16 +285,15 @@ export class LanduseService {
   /**
    * Spatial check for an individual cell coordinate:
    * 1. Checks if point is inside any OSM forest polygon (Ray-casting containment).
-   * 2. For mixed stands (leaf_type=mixed), dynamically selects dominant genus for the cell location.
-   * 3. If outside, computes real distance in meters to the nearest forest edge.
+   * 2. If outside, computes real distance in meters to the nearest forest edge.
    */
   evaluateCellForest(
     lat: number,
     lon: number,
     features?: ForestFeature[]
-  ): { isForest: boolean; dominantGenus: number; distToHostMeters: number } {
+  ): { isForest: boolean; osmGenus: number; tags?: Record<string, string>; distToHostMeters: number } {
     if (!features || features.length === 0) {
-      return { isForest: false, dominantGenus: 7, distToHostMeters: 500 };
+      return { isForest: false, osmGenus: 7, distToHostMeters: 500 };
     }
 
     // 1. Ray-casting point-in-polygon check for containment
@@ -345,15 +312,10 @@ export class LanduseService {
       }
 
       if (inside) {
-        // If this stand is explicitly tagged mixed, compute fine-scale spatial mosaic
-        let cellGenus = feature.dominantGenus;
-        if (feature.tags?.leaf_type === 'mixed') {
-          cellGenus = parseGenusFromOSMTags(feature.tags, lat, lon);
-        }
-
         return {
           isForest: true,
-          dominantGenus: cellGenus,
+          osmGenus: feature.dominantGenus,
+          tags: feature.tags,
           distToHostMeters: 5
         };
       }
@@ -361,7 +323,7 @@ export class LanduseService {
 
     // 2. Proximity check: Calculate Euclidean distance in meters to the closest forest vertex
     let minDistanceMeters = 999999;
-    let closestGenus = 4; // Default Oak
+    let closestFeature: ForestFeature | null = null;
 
     const metersPerLat = 111320;
     const metersPerLon = 111320 * Math.cos(lat * (Math.PI / 180));
@@ -374,7 +336,7 @@ export class LanduseService {
 
         if (dist < minDistanceMeters) {
           minDistanceMeters = dist;
-          closestGenus = feature.dominantGenus;
+          closestFeature = feature;
         }
       }
     }
@@ -385,7 +347,8 @@ export class LanduseService {
       // Within forest margin canopy drip line (<= 25m)
       return {
         isForest: true,
-        dominantGenus: closestGenus,
+        osmGenus: closestFeature ? closestFeature.dominantGenus : -1,
+        tags: closestFeature?.tags,
         distToHostMeters: Math.max(5, roundedDist)
       };
     }
@@ -393,7 +356,7 @@ export class LanduseService {
     // Outside forest in agricultural fields / urban land
     return {
       isForest: false,
-      dominantGenus: 7, // Non-forest
+      osmGenus: 7, // Non-forest
       distToHostMeters: roundedDist
     };
   }

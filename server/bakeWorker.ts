@@ -120,19 +120,22 @@ export class BakeWorker {
 
       // ─── STEP 2 & 3: Ingest Multi-Point Soil Chemistry & Extract Trees ─
       job.step = 'downloading_soil';
-      job.progressPct = 40;
+      job.progressPct = 35;
       job.message = `Ingesting SoilGrids chemistry (pH, clay, sand, SOC)...`;
 
       // Sample 4 quadrants across the tile and create bilinear soil interpolator
       const getSoilForCell = await this.soilgridsService.sampleTileSoilGrid(bounds, rows, cols);
 
       job.step = 'downloading_trees';
-      job.progressPct = 65;
-      job.message = `Evaluating spatial forest boundaries and canopy composition...`;
+      job.progressPct = 60;
+      job.message = `Querying GBIF tree occurrence API for real host tree distribution...`;
+
+      // Query GBIF tree occurrence API with fallback for exact species distribution
+      const treeSampler = await this.forestpathsService.sampleTileTrees(bounds);
 
       // ─── STEP 4: Evaluate Suitability Matrices Per-Cell ──────────────────
       job.step = 'computing_suitability';
-      job.progressPct = 85;
+      job.progressPct = 80;
       job.message = `Computing Boletus & Chanterelle suitability models...`;
 
       const cells: BakedCell[] = [];
@@ -149,7 +152,22 @@ export class BakeWorker {
             landuse.forestFeatures
           );
 
-          // 2. Continuous spatial soil chemistry
+          // 2. Resolve tree genus from real GBIF occurrences, OSM tags, or fallback
+          let resolvedGenus = 7;
+          let treeSource: 'gbif' | 'osm' | 'fallback' | undefined = undefined;
+
+          if (forestInfo.isForest) {
+            const treeRes = treeSampler.resolveGenusForCell(
+              cellLat,
+              cellLon,
+              forestInfo.osmGenus,
+              forestInfo.tags
+            );
+            resolvedGenus = treeRes.genus;
+            treeSource = treeRes.source;
+          }
+
+          // 3. Continuous spatial soil chemistry
           const soilProps = getSoilForCell(r, c);
 
           // Construct EnvironmentalInputs for scoring engine
@@ -160,7 +178,7 @@ export class BakeWorker {
             clayPct: soilProps.clayPct,
             sandPct: soilProps.sandPct,
             socDgKg: soilProps.socDgKg,
-            hostTreeGenus: forestInfo.dominantGenus,
+            hostTreeGenus: resolvedGenus,
             distToHostMeters: forestInfo.distToHostMeters,
             elevationMeters: 250,
             aspectDegrees: 180,
@@ -178,7 +196,8 @@ export class BakeWorker {
             col: c,
             lat: cellLat,
             lon: cellLon,
-            treeGenus: forestInfo.dominantGenus,
+            treeGenus: resolvedGenus,
+            treeSource,
             distToHostMeters: forestInfo.distToHostMeters,
             soilPH: soilProps.soilPH,
             clayPct: soilProps.clayPct,
@@ -194,6 +213,16 @@ export class BakeWorker {
       const forestCellCount = cells.filter(c => c.isForest).length;
       const accurateForestPct = Math.round((forestCellCount / cells.length) * 100);
 
+      // Aggregate tree genus distribution and Oak metrics
+      const genusDistribution: Record<number, number> = {};
+      for (const cell of cells) {
+        if (cell.isForest) {
+          genusDistribution[cell.treeGenus] = (genusDistribution[cell.treeGenus] || 0) + 1;
+        }
+      }
+      const oakCellsCount = genusDistribution[4] || 0;
+      const oakCoveragePct = forestCellCount > 0 ? Math.round((oakCellsCount / forestCellCount) * 100) : 0;
+
       // ─── STEP 5: Persist Baked Tile to Disk ──────────────────────────────
       const bakedTile: BakedTileData = {
         tileId,
@@ -204,6 +233,9 @@ export class BakeWorker {
         forestCoveragePct: accurateForestPct,
         isEmpty: false,
         cells,
+        genusDistribution,
+        oakCellsCount,
+        oakCoveragePct,
         bakedAt: new Date().toISOString()
       };
 
@@ -215,7 +247,7 @@ export class BakeWorker {
       job.message = `Successfully baked ${cells.length} cells in ${totalDuration}ms. Saved to disk.`;
       job.completedAt = Date.now();
 
-      console.log(`[BakeWorker] [${tileId}] Successfully baked ${cells.length} cells in ${totalDuration}ms (Forest cells: ${forestCellCount}/${cells.length}, ${accurateForestPct}% coverage)`);
+      console.log(`[BakeWorker] [${tileId}] Successfully baked ${cells.length} cells in ${totalDuration}ms (Forest: ${forestCellCount}/${cells.length} [${accurateForestPct}%], Oaks: ${oakCellsCount} [${oakCoveragePct}%], Genera: ${JSON.stringify(genusDistribution)})`);
       return bakedTile;
 
     } catch (err: any) {
