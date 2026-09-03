@@ -22,7 +22,7 @@ export class SoilgridsService {
     console.log(`[SoilgridsService] [${key}] Querying SoilGrids chemistry for coordinates (${lat.toFixed(3)}, ${lon.toFixed(3)})...`);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
     let res: Response;
     try {
@@ -30,7 +30,7 @@ export class SoilgridsService {
     } catch (err: any) {
       clearTimeout(timeout);
       const duration = Date.now() - startTime;
-      const errMsg = err?.name === 'AbortError' ? 'Timeout (60s exceeded)' : (err?.message || String(err));
+      const errMsg = err?.name === 'AbortError' ? 'Timeout (25s exceeded)' : (err?.message || String(err));
       console.warn(`[SoilgridsService] [${key}] SoilGrids request failed after ${duration}ms: ${errMsg}`);
       throw new Error(`SoilGrids request failed: ${errMsg}`);
     }
@@ -74,7 +74,9 @@ export class SoilgridsService {
 
   /**
    * Samples SoilGrids at 4 spatial quadrants across the tile and provides
-   * bilinear-interpolated soil chemistry for every individual cell
+   * bilinear-interpolated soil chemistry for every individual cell.
+   * If any quadrant fails or times out, seamlessly infers from successful quadrants
+   * or regional soil baseline.
    */
   async sampleTileSoilGrid(
     bounds: { south: number; west: number; north: number; east: number },
@@ -90,42 +92,73 @@ export class SoilgridsService {
     const nwCoords = { lat: bounds.south + 0.75 * dLat, lon: bounds.west + 0.25 * dLon };
     const neCoords = { lat: bounds.south + 0.75 * dLat, lon: bounds.west + 0.75 * dLon };
 
-    try {
-      const [sw, se, nw, ne] = await Promise.all([
-        this.getSoilProperties(swCoords.lat, swCoords.lon),
-        this.getSoilProperties(seCoords.lat, seCoords.lon),
-        this.getSoilProperties(nwCoords.lat, nwCoords.lon),
-        this.getSoilProperties(neCoords.lat, neCoords.lon)
-      ]);
+    const results = await Promise.allSettled([
+      this.getSoilProperties(swCoords.lat, swCoords.lon),
+      this.getSoilProperties(seCoords.lat, seCoords.lon),
+      this.getSoilProperties(nwCoords.lat, nwCoords.lon),
+      this.getSoilProperties(neCoords.lat, neCoords.lon)
+    ]);
 
-      return (r: number, c: number): SoilProperties => {
-        // r goes 0 (north) to rows-1 (south)
-        // ty: 0 at south, 1 at north
-        const ty = 1 - (r / Math.max(1, rows - 1));
-        // tx: 0 at west, 1 at east
-        const tx = c / Math.max(1, cols - 1);
+    const successfulProps: SoilProperties[] = [];
+    results.forEach(r => {
+      if (r.status === 'fulfilled') {
+        successfulProps.push(r.value);
+      }
+    });
 
-        const interp = (vSW: number, vSE: number, vNW: number, vNE: number) => {
-          const bottom = vSW * (1 - tx) + vSE * tx;
-          const top = vNW * (1 - tx) + vNE * tx;
-          return bottom * (1 - ty) + top * ty;
-        };
+    // Default regional baseline fallback if SoilGrids is unreachable
+    const midLat = (bounds.south + bounds.north) / 2;
+    const midLon = (bounds.west + bounds.east) / 2;
+    const defaultBaseline = this.getRegionalSoilBaseline(midLat, midLon);
 
-        return {
-          soilPH: Number(interp(sw.soilPH, se.soilPH, nw.soilPH, ne.soilPH).toFixed(1)),
-          clayPct: Math.round(interp(sw.clayPct, se.clayPct, nw.clayPct, ne.clayPct)),
-          sandPct: Math.round(interp(sw.sandPct, se.sandPct, nw.sandPct, ne.sandPct)),
-          socDgKg: Math.round(interp(sw.socDgKg, se.socDgKg, nw.socDgKg, ne.socDgKg))
-        };
+    const fallbackProp: SoilProperties = successfulProps.length > 0
+      ? {
+          soilPH: Number((successfulProps.reduce((a, b) => a + b.soilPH, 0) / successfulProps.length).toFixed(1)),
+          clayPct: Math.round(successfulProps.reduce((a, b) => a + b.clayPct, 0) / successfulProps.length),
+          sandPct: Math.round(successfulProps.reduce((a, b) => a + b.sandPct, 0) / successfulProps.length),
+          socDgKg: Math.round(successfulProps.reduce((a, b) => a + b.socDgKg, 0) / successfulProps.length)
+        }
+      : defaultBaseline;
+
+    const sw = results[0].status === 'fulfilled' ? results[0].value : fallbackProp;
+    const se = results[1].status === 'fulfilled' ? results[1].value : fallbackProp;
+    const nw = results[2].status === 'fulfilled' ? results[2].value : fallbackProp;
+    const ne = results[3].status === 'fulfilled' ? results[3].value : fallbackProp;
+
+    console.log(`[SoilgridsService] Bilinear grid established with ${successfulProps.length}/4 live quadrant samples (Tile avg pH: ${fallbackProp.soilPH}, Sand: ${fallbackProp.sandPct}%, Clay: ${fallbackProp.clayPct}%, SOC: ${fallbackProp.socDgKg})`);
+
+    return (r: number, c: number): SoilProperties => {
+      const ty = 1 - (r / Math.max(1, rows - 1));
+      const tx = c / Math.max(1, cols - 1);
+
+      const interp = (vSW: number, vSE: number, vNW: number, vNE: number) => {
+        const bottom = vSW * (1 - tx) + vSE * tx;
+        const top = vNW * (1 - tx) + vNE * tx;
+        return bottom * (1 - ty) + top * ty;
       };
 
-    } catch (err) {
-      // Fallback to center point if multiple queries fail
-      const centerSoil = await this.getSoilProperties(
-        (bounds.south + bounds.north) / 2,
-        (bounds.west + bounds.east) / 2
-      );
-      return () => centerSoil;
+      return {
+        soilPH: Number(interp(sw.soilPH, se.soilPH, nw.soilPH, ne.soilPH).toFixed(1)),
+        clayPct: Math.round(interp(sw.clayPct, se.clayPct, nw.clayPct, ne.clayPct)),
+        sandPct: Math.round(interp(sw.sandPct, se.sandPct, nw.sandPct, ne.sandPct)),
+        socDgKg: Math.round(interp(sw.socDgKg, se.socDgKg, nw.socDgKg, ne.socDgKg))
+      };
+    };
+  }
+
+  private getRegionalSoilBaseline(lat: number, lon: number): SoilProperties {
+    if (lat >= 52.4 && lat <= 53.4 && lon >= 9.6 && lon <= 10.8) {
+      // Aller valley / Südheide / Lüneburg dunes: acidic sandy soils (Podzol / Arenosol)
+      return { soilPH: 5.4, sandPct: 72, clayPct: 13, socDgKg: 680 };
     }
+    if (lat >= 51.6 && lat <= 52.0 && lon >= 10.2 && lon <= 10.8) {
+      // Harz Mountains: acidic Cambisols
+      return { soilPH: 4.8, sandPct: 45, clayPct: 22, socDgKg: 950 };
+    }
+    if (lat >= 47.5 && lat <= 49.0 && lon >= -4.8 && lon <= -1.0) {
+      // Brittany: acidic granite / schists
+      return { soilPH: 5.1, sandPct: 40, clayPct: 26, socDgKg: 820 };
+    }
+    return { soilPH: 5.5, sandPct: 50, clayPct: 20, socDgKg: 500 };
   }
 }
