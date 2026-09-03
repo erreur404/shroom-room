@@ -1,18 +1,7 @@
 export type SpeciesId = 'boletus' | 'cantharellus';
 
-export type RegionId = 'harz' | 'goehrde' | 'lueneburg' | 'broceliande' | 'huelgoat';
-
 export type BasemapId = 'opentopomap' | 'cyclosm' | 'osm';
 
-export interface RegionPreset {
-  id: RegionId;
-  name: string;
-  country: 'DE' | 'FR';
-  center: [number, number]; // [lat, lng]
-  zoom: number;
-  description: string;
-  defaultSpecies: SpeciesId;
-}
 
 export interface EnvironmentalInputs {
   lat: number;
