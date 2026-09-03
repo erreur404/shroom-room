@@ -25,27 +25,29 @@ echo "[2/4] Ensuring remote directory exists..."
 ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ${REMOTE_DIR}"
 
 # 3. Create deploy tarball and transfer via SCP
-echo "[3/4] Packaging and transferring files..."
-tar --exclude='node_modules' \
-    --exclude='.git' \
-    --exclude='.agents' \
-    --exclude='.scratch' \
-    --exclude='.vscode' \
-    --exclude='deploy.tgz' \
-    --exclude='*.log' \
-    --exclude='data' \
-    -czf deploy.tgz .
+echo "[3/4] Packaging and transferring production files (dist + runtime configs)..."
+tar -czf deploy.tgz dist package.json package-lock.json ecosystem.config.cjs scripts
+if [ -f .env ]; then
+  tar -rf deploy.tgz .env
+fi
 
 scp deploy.tgz "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"
 rm -f deploy.tgz
 
-# 4. Extract, install production dependencies, and start with PM2 in production mode
-echo "[4/4] Extracting, installing production dependencies, and restarting pure Node server on remote host..."
+# 4. Extract, install production dependencies, set up scripts, and start PM2 service
+echo "[4/4] Extracting, installing production dependencies, and starting service..."
 ssh "${REMOTE_USER}@${REMOTE_HOST}" "bash -s" << 'EOF'
   set -euo pipefail
   cd ~/shroom-room
   tar -xzf deploy.tgz
   rm -f deploy.tgz
+
+  # Make scripts executable and link them to home directory (~/) for convenience
+  chmod +x scripts/*.sh
+  cp -f scripts/*.sh .
+  for f in start.sh stop.sh restart.sh status.sh logs.sh; do
+    ln -sf ~/shroom-room/$f ~/$f
+  done
 
   # Install production dependencies only (no dev bundlers, tsx, or compilers)
   npm install --omit=dev
@@ -55,13 +57,8 @@ ssh "${REMOTE_USER}@${REMOTE_HOST}" "bash -s" << 'EOF'
     sudo npm install -g pm2
   fi
 
-  # Start/Restart pure Node service with PM2 in production mode
-  export PORT=3002
-  export NODE_ENV=production
-  pm2 delete shroom-room 2>/dev/null || true
-  pm2 start dist/index.js --name "shroom-room" --time --env NODE_ENV=production
-
-  # Save PM2 state for automatic restart on reboot
+  # Start or restart using ecosystem.config.cjs
+  pm2 startOrRestart ecosystem.config.cjs
   pm2 save
 
   # Wait for process initialization
@@ -79,4 +76,11 @@ EOF
 echo "=========================================================="
 echo " ✅ Shroom Room deployed successfully!"
 echo " 🌐 Open in your browser: http://${REMOTE_HOST}:${APP_PORT}"
+echo " 💡 Raspberry Pi helper scripts available in ~ and ~/shroom-room:"
+echo "    ~/start.sh   - Starts Shroom Room with PM2"
+echo "    ~/stop.sh    - Stops Shroom Room"
+echo "    ~/restart.sh - Restarts Shroom Room"
+echo "    ~/status.sh  - Checks PM2 process and HTTP health"
+echo "    ~/logs.sh    - Tails application logs"
 echo "=========================================================="
+
