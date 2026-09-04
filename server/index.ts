@@ -87,6 +87,14 @@ app.get('/api/tiles/status', (req, res) => {
           };
         } else if (activeJob.step === 'completed') {
           statuses[tid] = { status: 'baked' };
+        } else if (activeJob.step === 'queued') {
+          statuses[tid] = {
+            status: 'queued',
+            step: activeJob.step,
+            progressPct: activeJob.progressPct,
+            message: activeJob.message,
+            queuePosition: activeJob.queuePosition
+          };
         } else {
           statuses[tid] = {
             status: 'baking',
@@ -102,6 +110,18 @@ app.get('/api/tiles/status', (req, res) => {
   }
 
   res.json({ tiles: statuses });
+});
+
+/**
+ * Returns current bake queue telemetry
+ */
+app.get('/api/tiles/queue', (req, res) => {
+  res.json({
+    isBaking: bakeWorker.isBakingActive(),
+    currentTile: bakeWorker.getCurrentBakingTileId(),
+    queueLength: bakeWorker.getQueueLength(),
+    queue: bakeWorker.getQueuedTileIds()
+  });
 });
 
 /**
@@ -152,17 +172,18 @@ app.post('/api/tiles/bake', async (req, res) => {
       return res.json({ status: 'baked', tileId, data: existing });
     }
 
-    // Launch bake job in background
+    // Launch bake job in background (worker handles single-tile sequential queue)
     bakeWorker.bakeTile(tileId).catch(err => {
       console.error(`[Server] Background bake job failed for ${tileId}:`, err);
     });
 
     const job = bakeWorker.getJobState(tileId);
     res.json({
-      status: 'queued',
+      status: job?.step === 'queued' ? 'queued' : 'baking',
       tileId,
-      step: job?.step || 'landuse_check',
-      progressPct: job?.progressPct || 10,
+      step: job?.step || 'queued',
+      progressPct: job?.progressPct || 0,
+      queuePosition: job?.queuePosition,
       message: job?.message || 'Bake job queued'
     });
 

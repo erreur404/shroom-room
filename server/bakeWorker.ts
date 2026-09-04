@@ -8,6 +8,7 @@ import { EnvironmentalInputs } from '../src/types';
 
 export type BakeStep =
   | 'idle'
+  | 'queued'
   | 'landuse_check'
   | 'downloading_trees'
   | 'downloading_soil'
@@ -17,6 +18,7 @@ export type BakeStep =
 
 export const STEP_DESCRIPTIONS: Record<BakeStep, string> = {
   idle: 'Idle',
+  queued: 'Queued (processing 1 tile at a time to reduce RAM/API pressure)',
   landuse_check: 'Tier-1 Forest Landcover Check (OpenStreetMap Overpass)',
   downloading_trees: 'Extracting Forest Tree Genus (ForestPaths)',
   downloading_soil: 'Ingesting Soil Chemistry pH/Clay/Sand/SOC (SoilGrids v2.0)',
@@ -32,12 +34,19 @@ export interface BakeJobState {
   message: string;
   startedAt: number;
   completedAt?: number;
+  queuePosition?: number;
   error?: string;
 }
 
 export class BakeWorker {
   private activeJobs: Map<string, BakeJobState> = new Map();
   private scoringEngine = new ScoringEngine();
+
+  // Single-tile concurrency queue to minimize Raspberry Pi RAM & external API pressure
+  private queue: string[] = [];
+  private isProcessing = false;
+  private currentTileId: string | null = null;
+  private waitingCallers: Map<string, Array<{ resolve: (d: BakedTileData) => void; reject: (err: any) => void }>> = new Map();
 
   constructor(
     private landuseService: LanduseService,
@@ -47,13 +56,41 @@ export class BakeWorker {
   ) {}
 
   getJobState(tileId: string): BakeJobState | null {
-    return this.activeJobs.get(tileId) || null;
+    const job = this.activeJobs.get(tileId);
+    if (!job) return null;
+    if (job.step === 'queued') {
+      const idx = this.queue.indexOf(tileId);
+      if (idx !== -1) {
+        job.queuePosition = idx + 1;
+        job.message = `In queue (position #${idx + 1} of ${this.queue.length})...`;
+      }
+    }
+    return job;
   }
 
   getAllActiveJobs(): BakeJobState[] {
     return Array.from(this.activeJobs.values());
   }
 
+  isBakingActive(): boolean {
+    return this.isProcessing;
+  }
+
+  getCurrentBakingTileId(): string | null {
+    return this.currentTileId;
+  }
+
+  getQueueLength(): number {
+    return this.queue.length;
+  }
+
+  getQueuedTileIds(): string[] {
+    return [...this.queue];
+  }
+
+  /**
+   * Enqueues a tile for baking. Ensures strictly 1 tile is actively baked at a time.
+   */
   async bakeTile(tileId: string): Promise<BakedTileData> {
     // 1. Check if already baked on disk
     const existing = this.tileStore.loadTile(tileId);
@@ -61,39 +98,115 @@ export class BakeWorker {
       return existing;
     }
 
-    // 2. Check if a job is already actively baking this tile
-    const existingJob = this.activeJobs.get(tileId);
-    if (existingJob && existingJob.step !== 'error' && existingJob.step !== 'completed') {
-      // Wait for existing job to finish
-      return new Promise((resolve, reject) => {
-        const interval = setInterval(() => {
-          const state = this.activeJobs.get(tileId);
-          if (state?.step === 'completed') {
-            clearInterval(interval);
-            const data = this.tileStore.loadTile(tileId);
-            if (data) resolve(data);
-            else reject(new Error('Tile completed but not found on disk'));
-          } else if (state?.step === 'error') {
-            clearInterval(interval);
-            reject(new Error(state.error || 'Bake job failed'));
-          }
-        }, 150);
+    // 2. If this tile is already currently baking or queued, join waiting callers
+    if (this.currentTileId === tileId || this.queue.includes(tileId)) {
+      return new Promise<BakedTileData>((resolve, reject) => {
+        const callers = this.waitingCallers.get(tileId) || [];
+        callers.push({ resolve, reject });
+        this.waitingCallers.set(tileId, callers);
       });
     }
 
-    // 3. Initialize new Bake Job
+    // 3. Register caller and enqueue
+    return new Promise<BakedTileData>((resolve, reject) => {
+      const callers = this.waitingCallers.get(tileId) || [];
+      callers.push({ resolve, reject });
+      this.waitingCallers.set(tileId, callers);
+
+      const job: BakeJobState = {
+        tileId,
+        step: 'queued',
+        progressPct: 0,
+        message: this.isProcessing ? 'Waiting in queue for current tile...' : 'Preparing bake job...',
+        startedAt: Date.now()
+      };
+      this.activeJobs.set(tileId, job);
+
+      this.queue.push(tileId);
+      this.updateQueuePositions();
+
+      this.processQueue();
+    });
+  }
+
+  private updateQueuePositions() {
+    for (let i = 0; i < this.queue.length; i++) {
+      const tid = this.queue[i];
+      const job = this.activeJobs.get(tid);
+      if (job && job.step === 'queued') {
+        job.queuePosition = i + 1;
+        job.message = `In queue (position #${i + 1} of ${this.queue.length})...`;
+      }
+    }
+  }
+
+  /**
+   * Sequential queue processor: strictly 1 tile at a time.
+   */
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing) {
+      return;
+    }
+
+    if (this.queue.length === 0) {
+      this.currentTileId = null;
+      return;
+    }
+
+    this.isProcessing = true;
+    const tileId = this.queue.shift()!;
+    this.currentTileId = tileId;
+    this.updateQueuePositions();
+
+    console.log(`[BakeWorker] [Queue] Starting tile [${tileId}] (Remaining in queue: ${this.queue.length})`);
+
+    try {
+      const bakedTile = await this.executeBake(tileId);
+      const callers = this.waitingCallers.get(tileId) || [];
+      this.waitingCallers.delete(tileId);
+      for (const caller of callers) {
+        caller.resolve(bakedTile);
+      }
+    } catch (err: any) {
+      const callers = this.waitingCallers.get(tileId) || [];
+      this.waitingCallers.delete(tileId);
+      for (const caller of callers) {
+        caller.reject(err);
+      }
+    } finally {
+      this.isProcessing = false;
+      this.currentTileId = null;
+      // Allow event loop to turn and memory to settle before next tile
+      setImmediate(() => {
+        this.processQueue();
+      });
+    }
+  }
+
+  /**
+   * Performs the actual multi-step extraction and evaluation for a single tile.
+   */
+  private async executeBake(tileId: string): Promise<BakedTileData> {
     const startTime = Date.now();
     const bounds = parseTileBounds(tileId);
     console.log(`[BakeWorker] [${tileId}] Starting bake job for bounds [S:${bounds.south}, W:${bounds.west}, N:${bounds.north}, E:${bounds.east}]`);
 
-    const job: BakeJobState = {
-      tileId,
-      step: 'landuse_check',
-      progressPct: 10,
-      message: 'Checking OpenStreetMap forest landcover...',
-      startedAt: startTime
-    };
-    this.activeJobs.set(tileId, job);
+    let job = this.activeJobs.get(tileId);
+    if (!job) {
+      job = {
+        tileId,
+        step: 'landuse_check',
+        progressPct: 10,
+        message: 'Checking OpenStreetMap forest landcover...',
+        startedAt: startTime
+      };
+      this.activeJobs.set(tileId, job);
+    } else {
+      job.step = 'landuse_check';
+      job.queuePosition = undefined;
+      job.progressPct = 10;
+      job.message = 'Checking OpenStreetMap forest landcover...';
+    }
 
     try {
       // ─── STEP 1: Tier-1 Landuse Gating ──────────────────────────────────
@@ -136,8 +249,9 @@ export class BakeWorker {
       // ─── STEP 4: Evaluate Suitability Matrices Per-Cell ──────────────────
       job.step = 'computing_suitability';
       job.progressPct = 80;
-      job.message = `Computing Boletus & Chanterelle suitability models...`;
+      job.message = `Computing 9 species suitability models across ${rows * cols} cells...`;
 
+      const todayDate = new Date().toISOString().split('T')[0];
       const cells: BakedCell[] = [];
 
       for (let r = 0; r < rows; r++) {
@@ -185,11 +299,18 @@ export class BakeWorker {
             rain14DaysMm: 35,
             currentSoilTempC: 13,
             pastWeekSoilTempC: 16,
-            date: new Date().toISOString().split('T')[0]
+            date: todayDate
           };
 
           const boletusScore = this.scoringEngine.evaluate('boletus', envInputs);
           const chanterelleScore = this.scoringEngine.evaluate('cantharellus', envInputs);
+          const hydnumScore = this.scoringEngine.evaluate('hydnum', envInputs);
+          const craterellusCornScore = this.scoringEngine.evaluate('craterellus_cornucopioides', envInputs);
+          const craterellusTubaeScore = this.scoringEngine.evaluate('craterellus_tubaeformis', envInputs);
+          const imleriaScore = this.scoringEngine.evaluate('imleria_badia', envInputs);
+          const laetiporusScore = this.scoringEngine.evaluate('laetiporus_sulphureus', envInputs);
+          const macrolepiotaScore = this.scoringEngine.evaluate('macrolepiota_procera', envInputs);
+          const suillusScore = this.scoringEngine.evaluate('suillus_luteus', envInputs);
 
           cells.push({
             row: r,
@@ -205,7 +326,14 @@ export class BakeWorker {
             socDgKg: soilProps.socDgKg,
             isForest: forestInfo.isForest,
             boletusSuitability: Math.round(boletusScore.suitabilityScore * 100),
-            chanterelleSuitability: Math.round(chanterelleScore.suitabilityScore * 100)
+            chanterelleSuitability: Math.round(chanterelleScore.suitabilityScore * 100),
+            hydnumSuitability: Math.round(hydnumScore.suitabilityScore * 100),
+            craterellus_cornucopioidesSuitability: Math.round(craterellusCornScore.suitabilityScore * 100),
+            craterellus_tubaeformisSuitability: Math.round(craterellusTubaeScore.suitabilityScore * 100),
+            imleria_badiaSuitability: Math.round(imleriaScore.suitabilityScore * 100),
+            laetiporus_sulphureusSuitability: Math.round(laetiporusScore.suitabilityScore * 100),
+            macrolepiota_proceraSuitability: Math.round(macrolepiotaScore.suitabilityScore * 100),
+            suillus_luteusSuitability: Math.round(suillusScore.suitabilityScore * 100)
           });
         }
       }

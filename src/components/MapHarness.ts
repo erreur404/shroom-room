@@ -271,9 +271,38 @@ export class MapHarness {
         if (cellW <= 0 || cellH <= 0) continue;
 
         // Suitability (0..1)
-        const rawSuitability = this.currentSpeciesId === 'boletus'
-          ? (cell.boletusSuitability ?? 0)
-          : (cell.chanterelleSuitability ?? 0);
+        let rawSuitability = 0;
+        if (this.currentSpeciesId === 'boletus') {
+          rawSuitability = cell.boletusSuitability ?? 0;
+        } else if (this.currentSpeciesId === 'cantharellus') {
+          rawSuitability = cell.chanterelleSuitability ?? 0;
+        } else {
+          const baked = (cell as any)[`${this.currentSpeciesId}Suitability`];
+          if (typeof baked === 'number') {
+            rawSuitability = baked;
+          } else {
+            // Dynamically evaluate suitability from cell habitat features and memoize
+            const env: EnvironmentalInputs = {
+              lat: cell.lat,
+              lon: cell.lon,
+              soilPH: cell.soilPH,
+              clayPct: cell.clayPct,
+              sandPct: cell.sandPct,
+              socDgKg: cell.socDgKg,
+              hostTreeGenus: cell.treeGenus,
+              distToHostMeters: cell.distToHostMeters,
+              elevationMeters: 250,
+              aspectDegrees: 180,
+              rain14DaysMm: 35,
+              currentSoilTempC: 13,
+              pastWeekSoilTempC: 16,
+              date: this.currentDateStr
+            };
+            const scoring = this.scoringEngine.evaluate(this.currentSpeciesId, env);
+            rawSuitability = Math.round(scoring.suitabilityScore * 100);
+            (cell as any)[`${this.currentSpeciesId}Suitability`] = rawSuitability;
+          }
+        }
         const suitScore = rawSuitability / 100;
 
         // 1. Draw Suitability (Red)

@@ -76,6 +76,20 @@ export class TileStore {
         const avgChanterelle = Math.round(
           matchingCells.reduce((acc, c) => acc + c.chanterelleSuitability, 0) / matchingCells.length
         );
+        const calcAvg = (key: keyof BakedCell) => {
+          const valid = matchingCells.filter(c => typeof c[key] === 'number');
+          return valid.length > 0
+            ? Math.round(valid.reduce((acc, c) => acc + (c[key] as number), 0) / valid.length)
+            : undefined;
+        };
+
+        const avgHydnum = calcAvg('hydnumSuitability');
+        const avgCraterellusCorn = calcAvg('craterellus_cornucopioidesSuitability');
+        const avgCraterellusTubae = calcAvg('craterellus_tubaeformisSuitability');
+        const avgImleria = calcAvg('imleria_badiaSuitability');
+        const avgLaetiporus = calcAvg('laetiporus_sulphureusSuitability');
+        const avgMacrolepiota = calcAvg('macrolepiota_proceraSuitability');
+        const avgSuillus = calcAvg('suillus_luteusSuitability');
 
         fusedCells.push({
           row: fRow,
@@ -84,7 +98,14 @@ export class TileStore {
           lon: Number(avgLon.toFixed(4)),
           isForest: hasForest,
           boletusSuitability: avgBoletus,
-          chanterelleSuitability: avgChanterelle
+          chanterelleSuitability: avgChanterelle,
+          ...(avgHydnum !== undefined ? { hydnumSuitability: avgHydnum } : {}),
+          ...(avgCraterellusCorn !== undefined ? { craterellus_cornucopioidesSuitability: avgCraterellusCorn } : {}),
+          ...(avgCraterellusTubae !== undefined ? { craterellus_tubaeformisSuitability: avgCraterellusTubae } : {}),
+          ...(avgImleria !== undefined ? { imleria_badiaSuitability: avgImleria } : {}),
+          ...(avgLaetiporus !== undefined ? { laetiporus_sulphureusSuitability: avgLaetiporus } : {}),
+          ...(avgMacrolepiota !== undefined ? { macrolepiota_proceraSuitability: avgMacrolepiota } : {}),
+          ...(avgSuillus !== undefined ? { suillus_luteusSuitability: avgSuillus } : {})
         });
       }
     }

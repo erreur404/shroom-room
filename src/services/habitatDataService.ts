@@ -75,6 +75,69 @@ export const SPECIES_DETAILS: Record<SpeciesId, {
     optimalPH: 'pH 4.0 – 5.2 (Strongly acidophilic)',
     seasonWindow: 'June 15 – October 31 (Summer/Autumn)',
     badgeColor: '#f59e0b'
+  },
+  hydnum: {
+    name: 'Hydnum repandum',
+    commonName: 'Wood Hedgehog / Pied-de-mouton / Semmel-Stoppelpilz',
+    guild: 'Ectomycorrhizal (ECM)',
+    symbionts: ['Beech (Fagus)', 'Spruce (Picea)', 'Pine (Pinus)', 'Oak (Quercus)'],
+    optimalPH: 'pH 4.5 – 6.5 (Sub-acidic to neutral)',
+    seasonWindow: 'August 15 – December 15 (Late Autumn / Frost-tolerant)',
+    badgeColor: '#d97706'
+  },
+  craterellus_cornucopioides: {
+    name: 'Craterellus cornucopioides',
+    commonName: 'Black Trumpet / Trompette de la mort / Totentrompete',
+    guild: 'Ectomycorrhizal (ECM)',
+    symbionts: ['Beech (Fagus)', 'Oak (Quercus)'],
+    optimalPH: 'pH 5.2 – 6.8 (Moist loam & calcareous/neutral soils)',
+    seasonWindow: 'August 15 – November 30 (Autumn Peak)',
+    badgeColor: '#475569'
+  },
+  craterellus_tubaeformis: {
+    name: 'Craterellus tubaeformis',
+    commonName: 'Trumpet Chanterelle / Yellowfoot / Chanterelle en tube',
+    guild: 'Ectomycorrhizal (ECM)',
+    symbionts: ['Spruce (Picea)', 'Pine (Pinus)', 'Beech (Fagus)'],
+    optimalPH: 'pH 4.0 – 5.5 (Acidophilic moss cushions)',
+    seasonWindow: 'September 15 – January 15 (Extreme Frost-hardy)',
+    badgeColor: '#eab308'
+  },
+  imleria_badia: {
+    name: 'Imleria badia',
+    commonName: 'Bay Bolete / Cèpe bai / Maronen-Röhrling',
+    guild: 'Ectomycorrhizal (ECM)',
+    symbionts: ['Spruce (Picea)', 'Pine (Pinus)', 'Beech (Fagus)'],
+    optimalPH: 'pH 3.8 – 5.4 (Strongly acidophilic sandy soils)',
+    seasonWindow: 'August 1 – November 15 (Late Summer & Autumn)',
+    badgeColor: '#92400e'
+  },
+  laetiporus_sulphureus: {
+    name: 'Laetiporus sulphureus',
+    commonName: 'Chicken of the Woods / Polypore soufré / Schwefelporling',
+    guild: 'Parasitic / Lignicolous Saprotroph',
+    symbionts: ['Oak (Quercus)', 'Sweet Chestnut (Castanea)', 'Beech (Fagus)'],
+    optimalPH: 'pH 4.5 – 7.0 (Hardwood trunk dweller)',
+    seasonWindow: 'May 15 – October 15 (Spring through Autumn)',
+    badgeColor: '#f97316'
+  },
+  macrolepiota_procera: {
+    name: 'Macrolepiota procera',
+    commonName: 'Parasol Mushroom / Coulemelle / Parasolpilz',
+    guild: 'Saprotrophic (Humus & Litter)',
+    symbionts: ['Woodland Openings', 'Forest Edges', 'Rich Humus Clearings'],
+    optimalPH: 'pH 5.0 – 7.2 (Humus-rich loams & meadows)',
+    seasonWindow: 'July 15 – November 15 (Summer to Mid-Autumn)',
+    badgeColor: '#a8a29e'
+  },
+  suillus_luteus: {
+    name: 'Suillus luteus / grevillei',
+    commonName: 'Slippery Jack & Larch Bolete / Butterpilz & Lärchen-Röhrling',
+    guild: 'Ectomycorrhizal (ECM)',
+    symbionts: ['Pine (Pinus)', 'Larch (Larix)'],
+    optimalPH: 'pH 4.2 – 6.0 (Sandy pine litter)',
+    seasonWindow: 'August 1 – November 15 (Autumn Peak)',
+    badgeColor: '#b45309'
   }
 };
 

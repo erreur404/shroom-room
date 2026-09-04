@@ -19,6 +19,13 @@ export interface BakedCell {
   isForest: boolean;
   boletusSuitability: number;     // 0..100
   chanterelleSuitability: number; // 0..100
+  hydnumSuitability?: number;      // 0..100
+  craterellus_cornucopioidesSuitability?: number; // 0..100
+  craterellus_tubaeformisSuitability?: number;    // 0..100
+  imleria_badiaSuitability?: number;              // 0..100
+  laetiporus_sulphureusSuitability?: number;      // 0..100
+  macrolepiota_proceraSuitability?: number;       // 0..100
+  suillus_luteusSuitability?: number;             // 0..100
   treeSource?: 'gbif' | 'osm' | 'fallback';
 }
 
@@ -46,6 +53,13 @@ export interface BakedTileData {
       isForest: boolean;
       boletusSuitability: number;
       chanterelleSuitability: number;
+      hydnumSuitability?: number;
+      craterellus_cornucopioidesSuitability?: number;
+      craterellus_tubaeformisSuitability?: number;
+      imleria_badiaSuitability?: number;
+      laetiporus_sulphureusSuitability?: number;
+      macrolepiota_proceraSuitability?: number;
+      suillus_luteusSuitability?: number;
     }[];
   };
   bakedAt: string;

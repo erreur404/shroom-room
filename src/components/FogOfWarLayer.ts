@@ -93,9 +93,11 @@ export class FogOfWarLayer {
 
   private async pollTileStatuses() {
     if (!this.map || this.map.getZoom() <= 9) return;
-    // Only poll if there are actively baking tiles
-    const hasBaking = Array.from(this.tileStatuses.values()).some(s => s.status === 'baking');
-    if (hasBaking) {
+    // Only poll if there are actively baking or queued tiles
+    const hasPending = Array.from(this.tileStatuses.values()).some(
+      s => s.status === 'baking' || s.status === 'queued'
+    );
+    if (hasPending) {
       await this.syncViewportTiles();
     }
   }
@@ -152,6 +154,31 @@ export class FogOfWarLayer {
 
         this.fogLayerGroup.addLayer(fogPolygon);
 
+      } else if (statusInfo.status === 'queued') {
+        // Render Calm Cyan Queued Overlay (Single-tile queue indicator)
+        const queuedPolygon = L.rectangle(latLngBounds, {
+          color: '#38bdf8',
+          weight: 2,
+          dashArray: '4, 4',
+          fillColor: '#0284c7',
+          fillOpacity: 0.35,
+          className: 'fog-queued-tile'
+        });
+
+        const queueLabel = statusInfo.queuePosition
+          ? `In Queue (#${statusInfo.queuePosition})`
+          : 'In Queue (waiting in line)';
+
+        queuedPolygon.bindTooltip(
+          `<div style="font-family: inherit; font-size: 12px; text-align: center;">
+            <strong>⏳ ${queueLabel}</strong><br/>
+            <span>${statusInfo.message || 'Processing 1 tile at a time to protect Pi RAM'}</span>
+          </div>`,
+          { permanent: true, direction: 'center', className: 'baking-status-tooltip' }
+        );
+
+        this.fogLayerGroup.addLayer(queuedPolygon);
+
       } else if (statusInfo.status === 'baking') {
         // Render Pulsing Animated Baking Overlay
         const bakingPolygon = L.rectangle(latLngBounds, {
@@ -177,12 +204,13 @@ export class FogOfWarLayer {
   }
 
   async triggerBake(tileId: string) {
-    // Update local state to baking immediately for instant UI feedback
+    // Check if any tile is currently baking
+    const anyBaking = Array.from(this.tileStatuses.values()).some(s => s.status === 'baking');
     this.tileStatuses.set(tileId, {
-      status: 'baking',
-      step: 'landuse_check',
-      progressPct: 15,
-      message: 'Checking forest landcover...'
+      status: anyBaking ? 'queued' : 'baking',
+      step: anyBaking ? 'queued' : 'landuse_check',
+      progressPct: anyBaking ? 0 : 15,
+      message: anyBaking ? 'Waiting in queue...' : 'Checking forest landcover...'
     });
     this.renderFogTiles();
 
@@ -193,6 +221,17 @@ export class FogOfWarLayer {
         body: JSON.stringify({ tileId })
       });
       if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'queued') {
+          this.tileStatuses.set(tileId, {
+            status: 'queued',
+            step: 'queued',
+            progressPct: 0,
+            queuePosition: data.queuePosition,
+            message: data.message || 'In queue (waiting for active tile)...'
+          });
+          this.renderFogTiles();
+        }
         this.callbacks.onBakeRequest(tileId);
       }
     } catch (err) {

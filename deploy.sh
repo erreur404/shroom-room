@@ -26,10 +26,7 @@ ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ${REMOTE_DIR}"
 
 # 3. Create deploy tarball and transfer via SCP
 echo "[3/4] Packaging and transferring production files (dist + runtime configs)..."
-tar -czf deploy.tgz dist package.json package-lock.json ecosystem.config.cjs scripts
-if [ -f .env ]; then
-  tar -rf deploy.tgz .env
-fi
+tar -czf deploy.tgz dist package.json package-lock.json ecosystem.config.cjs scripts .env
 
 scp deploy.tgz "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"
 rm -f deploy.tgz

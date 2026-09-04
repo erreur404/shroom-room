@@ -78,7 +78,148 @@ This document details the diagnostic field identification rules, toxic and inedi
 
 ---
 
-## 3. GPX 1.1 Embedded Field Guide Formatting
+## 3. Hydnum repandum (Wood Hedgehog / Pied-de-mouton / Semmel-Stoppelpilz)
+
+### A. Habitat & Search Strategy
+- **Symbionts**: European Beech (*Fagus sylvatica*), Norway Spruce (*Picea abies*), Scots Pine (*Pinus sylvestris*), and Oak (*Quercus robur/petraea*).
+- **Search Zone**: Mossy ground, leaf litter cushions, and acidic to sub-neutral woodland slopes. Often forms lines or fairy rings.
+- **Season**: Late August through December (notable cold and frost tolerance).
+
+### B. Diagnostic Identification Keys (The "Hedgehog Checklist")
+1. **Underside**: **SOFT CONICAL SPINES / TEETH** (Hydnoid hymenophore):
+   - Downward pointing, cream to pale salmon colored.
+   - Detach easily when rubbed with a finger (**NO GILLS, NO PORES**).
+2. **Cap**: Irregular, dry, cream-buff, pale ochre or peach-flesh color. Margins often wavy or lobed.
+3. **Stem (Stipe)**: Short, thick, solid, often eccentric (off-center), whitish-cream.
+4. **Flesh**: Brittle, solid white/cream, pleasant faint nutty scent, mild taste with peppery finish when raw.
+
+### C. Safety Rules & Lookalikes
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     HEDGEHOG MUSHROOM SAFETY RULE                       │
+│  In Europe, there are ZERO POISONOUS MUSHROOMS WITH SPINES under cap.   │
+│  Any terrestrial mushroom with soft creamy spines is edible & safe.     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+1. ✅ **Hydnum rufescens (Terracotta Hedgehog / Rötlicher Stoppelpilz)** — **CHOICE EDIBLE**:
+   - Smaller, more reddish-orange/terracotta cap with centrally placed slender stem.
+   - Spines do not run down stem as decurrently. Equally choice culinary edible.
+
+2. ⚠️ **Sarcodon / Hydnellum species (Tooth fungi / Korkstachelinge)** — **INEDIBLE (Bitter/Tough)**:
+   - Cap is dark brown, grey, or black with coarse dark scales.
+   - Flesh is leathery, woody, or corky and bitterly unpalatable. None are lethally toxic.
+
+---
+
+## 4. Craterellus cornucopioides (Black Trumpet / Trompette de la mort / Totentrompete)
+
+### A. Habitat & Search Strategy
+- **Symbionts**: European Beech (*Fagus sylvatica*) and Oak (*Quercus*).
+- **Search Zone**: Damp, shaded mossy hollows, road verges in deep leaf mulch, moist loams, and limestone woods.
+- **Season**: August through November.
+
+### B. Diagnostic Identification Keys
+1. **Shape**: Deep, hollow, trumpet- or funnel-shaped opening directly into the hollow stipe down to the ground.
+2. **Color**: Deep soot-black when damp; ash-grey to brownish when dry.
+3. **Fertile Outer Surface**: Smooth to gently rugulose/wrinkled (**NO GILLS, NO PORES**).
+4. **Flesh**: Thin, pliable, elastic, dark grey. Intense aroma reminiscent of black truffles and dried fruits.
+
+### C. Safety Rules & Lookalikes
+- ✅ **Zero Toxic Lookalikes**: There are no poisonous black trumpet mushrooms in Europe.
+- ⚠️ Similar species: *Craterellus cinereus* and *Pseudocraterellus undulatus* (both choice edibles).
+
+---
+
+## 5. Craterellus tubaeformis (Trumpet Chanterelle / Yellowfoot / Chanterelle en tube)
+
+### A. Habitat & Search Strategy
+- **Symbionts**: Norway Spruce (*Picea abies*), Scots Pine (*Pinus sylvestris*), and Beech (*Fagus*).
+- **Search Zone**: Thick acidic sphagnum moss beds, rotting conifer mulch, and moist valley floors.
+- **Season**: Late September through January (exceptional frost resistance).
+
+### B. Diagnostic Identification Keys
+1. **Underside**: Blunt, thick, repeatedly forking **false gills (folds/ribs)**, greyish-yellow to lilac-grey.
+2. **Stem**: Slender, bright golden-yellow to orange-ochre, completely hollow with a hole connecting to the cap depression.
+3. **Cap**: Thin, brownish-yellow to sepia, deeply funnel-shaped with wavy/lobed margin.
+
+### C. Safety Rules & Lookalikes
+- ✅ **No Dangerous Lookalikes**: Easily distinguished from *Hygrophoropsis aurantiaca* (False Chanterelle), which has sharp true gills and a solid dark stem.
+
+---
+
+## 6. Imleria badia (Bay Bolete / Cèpe bai / Maronen-Röhrling)
+
+### A. Habitat & Search Strategy
+- **Symbionts**: Spruce (*Picea*), Pine (*Pinus*), and Beech (*Fagus*) on acidic, sandy, podzolic soils.
+- **Season**: August through November.
+
+### B. Diagnostic Identification Keys
+1. **Pores**: Spongy tubes, cream-white turning greenish-yellow, bruising **instant dark blue/cyan** when pressed.
+2. **Cap**: Bay-brown to dark chestnut, smooth and velvety dry, becoming slightly tacky in wet weather.
+3. **Stem**: Cylindrical, fibrous brown without any raised netting (no white mesh, no dark mesh).
+4. **Flesh**: Firm, white to pale cream, turning slightly blue above the tubes.
+
+### C. Safety Rules & Lookalikes
+- ❌ **Rubroboletus satanas (Devil's Bolete)**: Blood-red pores and chalky white cap.
+- ❌ **Tylopilus felleus (Bitter Bolete)**: Pinkish pores, coarse dark raised mesh on stipe, overpoweringly bitter.
+- 📌 **Rule**: Yellow pores that bruise dark blue, paired with a smooth brown stem under conifers = safe Bay Bolete.
+
+---
+
+## 7. Laetiporus sulphureus (Chicken of the Woods / Polypore soufré / Schwefelporling)
+
+### A. Habitat & Search Strategy
+- **Hosts**: Heartwood parasite/saprotroph on living or standing dead trunks of mature hardwoods (principally *Quercus* Oak and *Castanea* Sweet Chestnut).
+- **Season**: May through October (spring flushes and late summer/early autumn flushes).
+
+### B. Diagnostic Identification Keys
+1. **Appearance**: Dazzling neon sulfur-yellow and bright salmon-orange tiered overlapping fan-shaped brackets.
+2. **Underside**: Tiny sulfur-yellow pores (NO GILLS).
+3. **Flesh**: Thick, succulent, cheese-like consistency when young, smelling and tasting like tender poultry.
+
+### C. Safety Rules & Lookalikes
+- ✅ **Unmistakable**: Zero poisonous European bracket fungi exhibit this vivid neon sulfur-yellow/orange combination.
+- ⚠️ **Caution**: Must always be cooked thoroughly. Do not pick brackets growing on toxic Yew (*Taxus baccata*).
+
+---
+
+## 8. Macrolepiota procera (Parasol Mushroom / Coulemelle / Parasolpilz)
+
+### A. Habitat & Search Strategy
+- **Habitat**: Woodland clearings, grassy forest borders, sunny path margins, and open meadows on rich humus.
+- **Season**: July through November.
+
+### B. Diagnostic Identification Keys
+1. **Size**: Giant mushroom (expanded cap 15 to 30 cm across, stipe 20 to 40 cm tall).
+2. **Stem Pattern**: Slender fibrous stem with bulbous base, decorated with prominent dark **snakeskin zig-zag bands (tigré)**.
+3. **Ring**: Thick, double-edged, woolly ring that **SLIDES FREELY** like a bracelet up and down the stem.
+4. **Gills**: Free from the stem, crowded, soft cream-white.
+
+### C. Safety Rules (CRITICAL)
+- ❌ **STRICT RULE 1**: NEVER pick parasol mushrooms with caps under 10 cm across (avoids deadly *Lepiota* species like *L. brunneoincarnata*).
+- ❌ **STRICT RULE 2**: NEVER pick specimens whose ring is fixed or immobile.
+
+---
+
+## 9. Suillus luteus / grevillei (Slippery Jack & Larch Bolete)
+
+### A. Habitat & Search Strategy
+- **Symbionts**: Obligate mycorrhizal partners with two-needle Pines (*Pinus*, for *S. luteus*) and Larch (*Larix*, for *S. grevillei*).
+- **Season**: August through November.
+
+### B. Diagnostic Identification Keys
+1. **Cap**: Thickly covered in a slimy, gelatinous, peelable chocolate-brown cuticle.
+2. **Pores**: Bright yellow, angular tubes, exuding pale milky droplets when young.
+3. **Stem & Ring**: Prominent whitish-purplish membranous ring on the upper stipe.
+
+### C. Safety Rules & Preparation
+- ✅ **No Toxic Lookalikes**: No poisonous boletes grow exclusively in pine needle litter.
+- 📌 **Preparation Rule**: Always peel and discard the slimy cap cuticle before cooking to avoid gastrointestinal upset.
+
+---
+
+## 10. GPX 1.1 Embedded Field Guide Formatting
 
 The following structured text block is generated automatically and embedded into each `<desc>` tag within the GPX export file:
 
@@ -119,7 +260,7 @@ The following structured text block is generated automatically and embedded into
 
 ---
 
-## 4. Emergency First-Aid Protocols for Foragers
+## 11. Emergency First-Aid Protocols for Foragers
 
 If accidental ingestion of an unknown or toxic mushroom is suspected:
 

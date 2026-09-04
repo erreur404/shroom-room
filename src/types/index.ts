@@ -1,4 +1,13 @@
-export type SpeciesId = 'boletus' | 'cantharellus';
+export type SpeciesId =
+  | 'boletus'
+  | 'cantharellus'
+  | 'hydnum'
+  | 'craterellus_cornucopioides'
+  | 'craterellus_tubaeformis'
+  | 'imleria_badia'
+  | 'laetiporus_sulphureus'
+  | 'macrolepiota_procera'
+  | 'suillus_luteus';
 
 export type BasemapId = 'opentopomap' | 'cyclosm' | 'osm';
 
