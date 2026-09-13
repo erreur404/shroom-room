@@ -18,7 +18,7 @@ cd "$SCRIPT_DIR"
 
 # 1. Build frontend and backend bundle locally
 echo "[1/4] Building production assets (Vite + esbuild)..."
-npm run build
+npm run prod:build
 
 # 2. Prepare remote directory
 echo "[2/4] Ensuring remote directory exists..."
