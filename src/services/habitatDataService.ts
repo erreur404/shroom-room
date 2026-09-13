@@ -1,53 +1,6 @@
-import { EnvironmentalInputs, RegionId, RegionPreset, SpeciesId, WeatherGridPoint } from '../types';
+import { EnvironmentalInputs, SpeciesId, WeatherGridPoint } from '../types';
 import { WeatherService } from './weatherService';
 
-export const REGION_PRESETS: Record<RegionId, RegionPreset> = {
-  harz: {
-    id: 'harz',
-    name: 'Harz National Park (Niedersachsen)',
-    country: 'DE',
-    center: [51.782, 10.451],
-    zoom: 12,
-    description: 'High-elevation montane Norway spruce and beech forest on acidic granite soils. Prime Boletus edulis habitat.',
-    defaultSpecies: 'boletus'
-  },
-  goehrde: {
-    id: 'goehrde',
-    name: 'Göhrde State Forest (Niedersachsen)',
-    country: 'DE',
-    center: [53.142, 10.835],
-    zoom: 12,
-    description: 'Largest contiguous deciduous forest in Northern Germany with ancient oaks and beeches. Prime Cantharellus ground.',
-    defaultSpecies: 'cantharellus'
-  },
-  lueneburg: {
-    id: 'lueneburg',
-    name: 'Lüneburg Heath (Niedersachsen)',
-    country: 'DE',
-    center: [53.165, 9.952],
-    zoom: 11,
-    description: 'Sandy pine and birch woodland on acidic podzolic soils with mossy forest margins.',
-    defaultSpecies: 'cantharellus'
-  },
-  broceliande: {
-    id: 'broceliande',
-    name: 'Forêt de Brocéliande (Bretagne)',
-    country: 'FR',
-    center: [48.021, -2.172],
-    zoom: 12,
-    description: 'Ancient mythical forest on Brioverian schists and sandstones with dense oak and beech stands. Prime cèpes and girolles.',
-    defaultSpecies: 'boletus'
-  },
-  huelgoat: {
-    id: 'huelgoat',
-    name: 'Forêt de Huelgoat (Bretagne)',
-    country: 'FR',
-    center: [48.364, -3.746],
-    zoom: 12,
-    description: 'Granite chaos and humid valley oak/beech/pine woodland with thick moss cushions.',
-    defaultSpecies: 'cantharellus'
-  }
-};
 
 export const SPECIES_DETAILS: Record<SpeciesId, {
   name: string;
@@ -149,7 +102,7 @@ export class HabitatDataService {
   private pendingFetches: Set<string> = new Set();
   private onTileUpdateCallbacks: (() => void)[] = [];
 
-  constructor() {}
+  constructor() { }
 
   /**
    * Register a listener to be notified when new tile data arrives from the backend
