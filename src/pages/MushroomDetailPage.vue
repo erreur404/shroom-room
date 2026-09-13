@@ -35,7 +35,7 @@
             <div class="species-title-row">
               <h1 class="species-common-title">{{ speciesCommonName }}</h1>
               <span class="edibility-badge" :class="'edibility-' + (idData?.edibility || 'choice')">
-                {{ idData?.edibilityLabel || 'Edible' }}
+                {{ getLocalizedText(idData?.edibilityLabel, currentLocale) }}
               </span>
             </div>
             <h2 class="species-latin-subtitle"><em>{{ speciesLatinName }}</em></h2>
@@ -73,7 +73,7 @@
                 <input type="checkbox" class="checklist-checkbox" />
                 <div class="checklist-content">
                   <div class="checklist-header">
-                    <span class="checklist-part-badge">{{ item.label }}</span>
+                    <span class="checklist-part-badge">{{ getLocalizedText(item.label, currentLocale) }}</span>
                     <button
                       v-if="item.anatomyTarget"
                       class="anatomy-link-btn"
@@ -83,7 +83,7 @@
                       <span>🔬 {{ i18n.ui.learnAnatomyLink }}</span>
                     </button>
                   </div>
-                  <p class="checklist-desc">{{ item.description }}</p>
+                  <p class="checklist-desc">{{ getLocalizedText(item.description, currentLocale) }}</p>
                 </div>
               </label>
             </div>
@@ -92,8 +92,8 @@
             <div class="spore-spec-card">
               <span class="spore-icon">🎨</span>
               <div>
-                <strong>{{ i18n.ui.sporePrintLabel }}:</strong>
-                <span> {{ idData.sporePrintColor }}</span>
+                <strong>{{ i18n.ui.sporePrintLabel }} :</strong>&nbsp;
+                <span>{{ getLocalizedText(idData.sporePrintColor, currentLocale) }}</span>
               </div>
             </div>
           </div>
@@ -118,7 +118,7 @@
             >
               <div class="lookalike-card-header">
                 <div class="lookalike-title-group">
-                  <h4 class="lookalike-name">{{ lookalike.name }}</h4>
+                  <h4 class="lookalike-name">{{ getLocalizedText(lookalike.name, currentLocale) }}</h4>
                   <span class="lookalike-latin"><em>{{ lookalike.latinName }}</em></span>
                 </div>
                 <span class="danger-badge" :class="'danger-badge-' + lookalike.dangerLevel">
@@ -126,12 +126,12 @@
                 </span>
               </div>
 
-              <p class="lookalike-desc">{{ lookalike.description }}</p>
+              <p class="lookalike-desc">{{ getLocalizedText(lookalike.description, currentLocale) }}</p>
 
               <div class="differences-wrap">
                 <span class="differences-title">{{ i18n.ui.crucialDifferences }}</span>
                 <ul class="differences-list">
-                  <li v-for="(diff, dIdx) in lookalike.crucialDifferences" :key="dIdx">
+                  <li v-for="(diff, dIdx) in getLocalizedList(lookalike.crucialDifferences, currentLocale)" :key="dIdx">
                     {{ diff }}
                   </li>
                 </ul>
@@ -145,26 +145,26 @@
           <div class="section-title-wrap">
             <div class="section-title-icon">🌲</div>
             <div>
-              <h3 class="section-title">Ecology & Growth Season</h3>
-              <p class="section-subtitle">Optimal habitat conditions for field prospecting</p>
+              <h3 class="section-title">{{ i18n.ui.ecologyTitle }}</h3>
+              <p class="section-subtitle">{{ i18n.ui.ecologySubtitle }}</p>
             </div>
           </div>
 
           <div class="species-specs-grid">
             <div class="spec-item">
-              <span class="spec-label">🌱 Guild / Type</span>
+              <span class="spec-label">{{ i18n.ui.guildLabel }}</span>
               <span class="spec-val">{{ speciesDetails.guild }}</span>
             </div>
             <div class="spec-item">
-              <span class="spec-label">🌲 Host Symbionts</span>
+              <span class="spec-label">{{ i18n.ui.symbiontsLabel }}</span>
               <span class="spec-val">{{ speciesDetails.symbionts.join(', ') }}</span>
             </div>
             <div class="spec-item">
-              <span class="spec-label">🧪 Optimal Soil pH</span>
+              <span class="spec-label">{{ i18n.ui.soilPHLabel }}</span>
               <span class="spec-val">{{ speciesDetails.optimalPH }}</span>
             </div>
             <div class="spec-item">
-              <span class="spec-label">📅 Growth Season</span>
+              <span class="spec-label">{{ i18n.ui.seasonWindowLabel }}</span>
               <span class="spec-val">{{ speciesDetails.seasonWindow }}</span>
             </div>
           </div>
@@ -190,7 +190,12 @@ import { currentLocale, setLocale, i18n, getSpeciesCommonName, getSpeciesLatinNa
 import { SupportedLocale } from '../i18n/types';
 import { SpeciesId } from '../types';
 import { SPECIES_DETAILS } from '../services/habitatDataService';
-import { SPECIES_IDENTIFICATION_DATA, EdibilityRating } from '../services/speciesIdentificationData';
+import {
+  SPECIES_IDENTIFICATION_DATA,
+  EdibilityRating,
+  getLocalizedText,
+  getLocalizedList
+} from '../services/speciesIdentificationData';
 
 const props = defineProps<{
   speciesId: SpeciesId;
@@ -211,11 +216,11 @@ function onLocaleChange(event: Event) {
 }
 
 function formatDangerLevel(level: string, edibility: EdibilityRating): string {
-  if (level === 'deadly' || edibility === 'deadly') return '☠️ DEADLY / MORTEL';
-  if (level === 'high' || edibility === 'toxic') return '⚠️ TOXIC / TOXIQUE';
-  if (edibility === 'inedible') return '❌ INEDIBLE / NON-COMESTIBLE';
-  if (edibility === 'caution') return '⚠️ CAUTION / AVEC PRÉCAUTION';
-  return '🍴 EDIBLE / COMESTIBLE';
+  if (level === 'deadly' || edibility === 'deadly') return `☠️ ${i18n.value.ui.dangerDeadly}`;
+  if (level === 'high' || edibility === 'toxic') return `⚠️ ${i18n.value.ui.dangerToxic}`;
+  if (edibility === 'inedible') return `❌ ${i18n.value.ui.dangerInedible}`;
+  if (edibility === 'caution') return `⚠️ ${i18n.value.ui.dangerCaution}`;
+  return `🍴 ${i18n.value.ui.dangerEdible}`;
 }
 </script>
 

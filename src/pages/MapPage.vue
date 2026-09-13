@@ -18,13 +18,8 @@
           </button>
 
           <!-- Field Guide / Species ID Button -->
-          <button id="btn-show-safety" class="btn btn-secondary btn-field-guide" :title="i18n.ui.fieldGuide" @click="goToFieldGuide">
+          <button id="btn-show-safety" class="btn btn-secondary btn-field-guide" :title="i18n.ui.fieldGuide" @click="openFieldGuide">
             <span class="icon">📖</span> <span class="btn-text-label">{{ i18n.ui.fieldGuide }}</span>
-          </button>
-
-          <!-- Direct Link to Anatomy Page -->
-          <button id="btn-nav-anatomy" class="btn btn-secondary" :title="i18n.ui.anatomyBtn" @click="goToAnatomy">
-            <span class="icon">🔬</span> <span class="btn-text-label">{{ i18n.ui.anatomyBtn }}</span>
           </button>
 
           <!-- Weather Button -->
@@ -377,8 +372,12 @@ function goToAnatomy() {
   emit('navigate', 'anatomy');
 }
 
-function goToFieldGuide() {
-  const species = appInstance?.getCurrentSpecies() || 'boletus';
+function openFieldGuide() {
+  appInstance?.openSafetyModal();
+}
+
+function goToDedicatedPage(speciesId?: SpeciesId) {
+  const species = speciesId || appInstance?.getCurrentSpecies() || 'boletus';
   emit('navigate', 'mushroom', species);
 }
 
@@ -391,6 +390,9 @@ defineExpose({
   },
   getCurrentSpecies: () => {
     return appInstance?.getCurrentSpecies() || 'boletus';
+  },
+  openFieldGuide: () => {
+    appInstance?.openSafetyModal();
   }
 });
 </script>

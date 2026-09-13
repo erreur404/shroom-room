@@ -84,5 +84,17 @@ export interface TranslationSchema {
     sporePrintLabel: string;
     learnAnatomyLink: string;
     mobileBasemapsTitle: string;
+    ecologyTitle: string;
+    ecologySubtitle: string;
+    guildLabel: string;
+    symbiontsLabel: string;
+    soilPHLabel: string;
+    seasonWindowLabel: string;
+    dangerDeadly: string;
+    dangerToxic: string;
+    dangerInedible: string;
+    dangerCaution: string;
+    dangerEdible: string;
+    edibilityChoice: string;
   };
 }

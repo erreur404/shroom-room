@@ -345,42 +345,50 @@ export class ShroomRoomApp {
     });
   }
 
+  public openSafetyModal() {
+    const modalBackdrop = document.getElementById('safety-modal') as HTMLElement;
+    const modalTitle = document.getElementById('modal-species-title') as HTMLElement;
+    const modalContent = document.getElementById('modal-safety-content') as HTMLElement;
+    if (!modalBackdrop || !modalTitle || !modalContent) return;
+
+    const formattedTitle = getSpeciesDisplayName(this.currentSpecies, currentLocale.value);
+    modalTitle.textContent = `${i18n.value.ui.fieldGuide}: ${formattedTitle}`;
+
+    modalContent.innerHTML = FieldGuideService.generateFieldGuideHtml(this.currentSpecies, currentLocale.value, {
+      includeTopActions: true
+    });
+
+    modalContent.querySelector('#btn-guide-anatomy')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      modalBackdrop.classList.add('hidden');
+      this.navigateCallback?.('anatomy');
+    });
+
+    modalContent.querySelector('#btn-guide-dedicated')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      modalBackdrop.classList.add('hidden');
+      this.navigateCallback?.('mushroom', this.currentSpecies);
+    });
+
+    modalBackdrop.classList.remove('hidden');
+  }
+
   private initSafetyModal() {
     const modalBackdrop = document.getElementById('safety-modal') as HTMLElement;
     const closeModalBtn = document.getElementById('btn-close-modal') as HTMLButtonElement;
-    const modalTitle = document.getElementById('modal-species-title') as HTMLElement;
-    const modalContent = document.getElementById('modal-safety-content') as HTMLElement;
     const openGuideBtn = document.getElementById('btn-show-safety') as HTMLButtonElement;
 
-    const renderModalContent = () => {
-      const formattedTitle = getSpeciesDisplayName(this.currentSpecies, currentLocale.value);
-      modalTitle.textContent = `${i18n.value.ui.fieldGuide}: ${formattedTitle}`;
-
-      modalContent.innerHTML = FieldGuideService.generateFieldGuideHtml(this.currentSpecies, currentLocale.value, {
-        includeTopActions: true
-      });
-
-      modalContent.querySelector('#btn-guide-anatomy')?.addEventListener('click', () => {
-        modalBackdrop.classList.add('hidden');
-        this.navigateCallback?.('anatomy');
-      });
-
-      modalContent.querySelector('#btn-guide-dedicated')?.addEventListener('click', () => {
-        modalBackdrop.classList.add('hidden');
-        this.navigateCallback?.('mushroom', this.currentSpecies);
-      });
-    };
-
     openGuideBtn?.addEventListener('click', () => {
-      renderModalContent();
-      modalBackdrop.classList.remove('hidden');
+      this.openSafetyModal();
     });
 
-    closeModalBtn.addEventListener('click', () => {
-      modalBackdrop.classList.add('hidden');
+    closeModalBtn?.addEventListener('click', () => {
+      modalBackdrop?.classList.add('hidden');
     });
 
-    modalBackdrop.addEventListener('click', (e) => {
+    modalBackdrop?.addEventListener('click', (e) => {
       if (e.target === modalBackdrop) {
         modalBackdrop.classList.add('hidden');
       }

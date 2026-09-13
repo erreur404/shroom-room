@@ -22,7 +22,7 @@ export interface HeaderBarCallbacks {
 
 export class HeaderBar {
   private speciesSelect: HTMLSelectElement;
-  private basemapSelect: HTMLSelectElement;
+  private basemapSelect: HTMLSelectElement | null;
   private dateInput: HTMLInputElement;
   private refreshWeatherBtn: HTMLButtonElement;
   private waypointModeBtn: HTMLButtonElement;
@@ -38,7 +38,7 @@ export class HeaderBar {
 
   constructor(private callbacks: HeaderBarCallbacks) {
     this.speciesSelect = document.getElementById('species-select') as HTMLSelectElement;
-    this.basemapSelect = document.getElementById('basemap-select') as HTMLSelectElement;
+    this.basemapSelect = document.getElementById('basemap-select') as HTMLSelectElement | null;
     this.dateInput = document.getElementById('simulation-date') as HTMLInputElement;
     this.refreshWeatherBtn = document.getElementById('btn-refresh-weather') as HTMLButtonElement;
     this.waypointModeBtn = document.getElementById('btn-mode-waypoint') as HTMLButtonElement;
@@ -85,8 +85,8 @@ export class HeaderBar {
       this.callbacks.onSpeciesChange(species);
     });
 
-    this.basemapSelect.addEventListener('change', () => {
-      const basemapId = this.basemapSelect.value as BasemapId;
+    this.basemapSelect?.addEventListener('change', () => {
+      const basemapId = this.basemapSelect!.value as BasemapId;
       const mobileBasemapSelect = document.getElementById('mobile-basemap-select') as HTMLSelectElement | null;
       if (mobileBasemapSelect) mobileBasemapSelect.value = basemapId;
       this.callbacks.onBasemapChange(basemapId);
@@ -95,10 +95,12 @@ export class HeaderBar {
     // Mobile Basemap Picker inside the mobile Layer drawer
     const mobileBasemapSelect = document.getElementById('mobile-basemap-select') as HTMLSelectElement | null;
     if (mobileBasemapSelect) {
-      mobileBasemapSelect.value = this.basemapSelect.value;
+      if (this.basemapSelect) {
+        mobileBasemapSelect.value = this.basemapSelect.value;
+      }
       mobileBasemapSelect.addEventListener('change', () => {
         const basemapId = mobileBasemapSelect.value as BasemapId;
-        this.basemapSelect.value = basemapId;
+        if (this.basemapSelect) this.basemapSelect.value = basemapId;
         this.callbacks.onBasemapChange(basemapId);
       });
     }
