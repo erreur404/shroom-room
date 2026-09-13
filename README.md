@@ -65,3 +65,12 @@ npm start
   - **OpenStreetMap Overpass API**: Forest boundary and woodland landcover classification
   - **Open-Meteo API**: Live 14-day cumulative precipitation and 0–10cm soil temperature shock triggers
   - **ForestPaths 10m**: Mycorrhizal host tree classification (Spruce, Pine, Beech, Oak)
+
+---
+
+## 📖 Guides & Documentation
+
+- **[Adding a New Species Guide](adding_new_species.md)**: Step-by-step instructions, AI prompts, ecological parameters, data sources, and codebase locations for adding new mushroom species manually or via AI.
+- **[Domain Model & Ubiquitous Language](CONTEXT.md)**: Architectural definitions of Suitability, Probability, Growth Seasons, and Fruiting Triggers.
+- **[Field Safety & Toxic Lookalikes](docs/research/field-identification-toxic-lookalikes.md)**: Positive identification keys and toxic lookalike warnings for all modeled species.
+

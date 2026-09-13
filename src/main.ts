@@ -1,3 +1,6 @@
+import { createApp } from 'vue';
+import App from './App.vue';
+import './styles/main.css';
 import { EnvironmentalInputs, ForagingWaypoint, ScoringResult, SpeciesId } from './types';
 import { ScoringEngine } from './scoring/pipelines';
 import { WeatherService } from './services/weatherService';
@@ -6,8 +9,15 @@ import { getTileId } from '../server/tileConfig';
 import { MapHarness } from './components/MapHarness';
 import { WaypointPlanner } from './components/WaypointPlanner';
 import { HeaderBar } from './components/HeaderBar';
+import {
+  currentLocale,
+  i18n,
+  getSpeciesDisplayName,
+  getSpeciesCommonName
+} from './i18n';
+import { FieldGuideService } from './services/fieldGuideService';
 
-class ShroomRoomApp {
+export class ShroomRoomApp {
   private scoringEngine = new ScoringEngine();
   private weatherService = new WeatherService();
   private habitatService = new HabitatDataService();
@@ -18,6 +28,23 @@ class ShroomRoomApp {
 
   private currentSpecies: SpeciesId = 'boletus';
   private currentDateStr: string = new Date().toISOString().split('T')[0];
+  private navigateCallback?: (page: 'map' | 'anatomy' | 'mushroom', speciesId?: SpeciesId) => void;
+
+  public setNavigateCallback(cb: (page: 'map' | 'anatomy' | 'mushroom', speciesId?: SpeciesId) => void) {
+    this.navigateCallback = cb;
+  }
+
+  public getCurrentSpecies(): SpeciesId {
+    return this.currentSpecies;
+  }
+
+  public invalidateMapSize() {
+    this.mapHarness?.invalidateSize();
+  }
+
+  public refreshTranslations() {
+    this.headerBar?.refreshTranslations();
+  }
 
   // Active HUD Telemetry State
   private lastClickedEnv?: EnvironmentalInputs;
@@ -202,7 +229,7 @@ class ShroomRoomApp {
     }
 
     const count = this.waypointPlanner.getWaypoints().length + 1;
-    const speciesName = SPECIES_DETAILS[this.currentSpecies]?.commonName.split('/')[0].trim() || 'Mushroom';
+    const speciesName = getSpeciesCommonName(this.currentSpecies, currentLocale.value);
     const name = isFoundSpot
       ? `🍄 ${speciesName} Spot #${count}`
       : `📍 Target #${count} (${speciesName})`;
@@ -326,180 +353,22 @@ class ShroomRoomApp {
     const openGuideBtn = document.getElementById('btn-show-safety') as HTMLButtonElement;
 
     const renderModalContent = () => {
-      const details = SPECIES_DETAILS[this.currentSpecies];
-      modalTitle.textContent = `Field Identification & Safety: ${details.name}`;
+      const formattedTitle = getSpeciesDisplayName(this.currentSpecies, currentLocale.value);
+      modalTitle.textContent = `${i18n.value.ui.fieldGuide}: ${formattedTitle}`;
 
-      let idKeysHtml = '';
-      let lookalikesHtml = '';
+      modalContent.innerHTML = FieldGuideService.generateFieldGuideHtml(this.currentSpecies, currentLocale.value, {
+        includeTopActions: true
+      });
 
-      if (this.currentSpecies === 'boletus') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Cap:</strong> Hazel/chestnut brown, tacky when damp, with a fine white margin line along the edge.</li>
-            <li><strong>Pores:</strong> Spongy tubes (NO GILLS). White in youth, turning yellowish to olive-green. Does NOT turn blue.</li>
-            <li><strong>Stem:</strong> Solid club-shaped stem with fine <strong>white raised netting</strong> on the upper half.</li>
-            <li><strong>Flesh:</strong> Firm, unchanging white when sliced. Pleasant hazelnut aroma.</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>❌ <strong>Rubroboletus satanas (Devil's Bolete) - POISONOUS:</strong> Chalky white cap, blood-red/orange pores, bruises dark blue. Foul smell in age.</li>
-            <li>❌ <strong>Tylopilus felleus (Bitter Bolete) - INEDIBLE:</strong> Pinkish pores with age, coarse dark brown/black raised stem netting. Overpoweringly bitter.</li>
-            <li><strong>Rule:</strong> NEVER pick boletes with red/orange pores or blue-staining flesh.</li>
-          </ul>
-        `;
-      } else if (this.currentSpecies === 'cantharellus') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Color:</strong> Uniform egg-yolk golden yellow to pale apricot throughout.</li>
-            <li><strong>Folds:</strong> Thick, blunt-edged <strong>false gills (folds/veins)</strong> running down stem. Cannot be peeled off.</li>
-            <li><strong>Cap:</strong> Irregular wavy margin, funnel-shaped when mature.</li>
-            <li><strong>Flesh:</strong> Meaty white interior with sweet apricot scent and peppery raw taste.</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>❌ <strong>Omphalotus olearius (Jack-o'-Lantern) - TOXIC:</strong> Grows in dense clusters directly on wood/stumps; has sharp true gills.</li>
-            <li>❌ <strong>Hygrophoropsis aurantiaca (False Chanterelle) - INEDIBLE:</strong> Thin floppy pumpkin cap, knife-sharp crowded true gills, hollow stem.</li>
-          </ul>
-        `;
-      } else if (this.currentSpecies === 'hydnum') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Underside:</strong> Covered in soft, downward-pointing <strong>spines (teeth)</strong> that detach easily when rubbed. NO GILLS, NO PORES.</li>
-            <li><strong>Cap:</strong> Creamy-buff, pale ochre to salmon-beige, dry, irregular wavy margin.</li>
-            <li><strong>Stem:</strong> Stout, off-center, solid, whitish to pale cream.</li>
-            <li><strong>Flesh:</strong> Firm, brittle, white to cream with a pleasant nutty aroma and mildly peppery finish.</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>✅ <strong>Zero Lethal Lookalikes:</strong> There are <strong>no poisonous toothed fungi in Europe</strong>.</li>
-            <li>⚠️ <strong>Hydnum rufescens (Terracotta Hedgehog) - EDIBLE:</strong> Smaller, orange-red cap, equally choice edible.</li>
-            <li>⚠️ <strong>Sarcodon / Hydnellum (Tooth fungi) - INEDIBLE:</strong> Dark brown/black, corky or bitter; not poisonous but tough and unpalatable.</li>
-            <li><strong>Rule:</strong> If it has soft cream/whitish spines under the cap and grows on the ground, it is a safe edible hedgehog mushroom!</li>
-          </ul>
-        `;
-      } else if (this.currentSpecies === 'craterellus_cornucopioides') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Shape:</strong> Hollow horn/trumpet expanding outwards; completely hollow down through the stem base.</li>
-            <li><strong>Color:</strong> Soot-black when damp, drying to dark charcoal/ash-grey.</li>
-            <li><strong>Underside:</strong> Outer fertile surface is nearly smooth or slightly wrinkled (NO GILLS, NO PORES).</li>
-            <li><strong>Flesh:</strong> Thin, elastic, dark grey. Intense rich perfume reminiscent of black truffles.</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>✅ <strong>Zero Toxic Lookalikes:</strong> Impossible to confuse with any toxic European species.</li>
-            <li>⚠️ <strong>Craterellus cinereus & Pseudocraterellus undulatus:</strong> Ash chanterelles with slight veins; both are choice edibles.</li>
-          </ul>
-        `;
-      } else if (this.currentSpecies === 'craterellus_tubaeformis') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Underside:</strong> Forking, blunt decurrent <strong>false gills (ridges/folds)</strong>, yellowish-grey.</li>
-            <li><strong>Stem:</strong> Slender, bright golden-yellow/ochre, completely hollow with hole connecting to cap depression.</li>
-            <li><strong>Cap:</strong> Funnel-shaped, brownish-yellow, wavy margin.</li>
-            <li><strong>Season:</strong> Prolific in mossy conifer woods late autumn through frost (Oct - Jan).</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>✅ <strong>No Dangerous Lookalikes:</strong> False chanterelles have thin knife-sharp blade gills and solid dark stems.</li>
-          </ul>
-        `;
-      } else if (this.currentSpecies === 'imleria_badia') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Pores:</strong> Spongy tubes, pale yellow to olive, bruising <strong>instant dark blue/cyan</strong> when pressed.</li>
-            <li><strong>Cap:</strong> Chestnut to bay-brown, smooth and dry (tacky in wet weather).</li>
-            <li><strong>Stem:</strong> Cylindrical brown stem <strong>WITHOUT raised netting</strong> (no white net, no dark net).</li>
-            <li><strong>Flesh:</strong> White to cream, bruising slowly light blue right above the tubes.</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>❌ <strong>Rubroboletus satanas (Devil's Bolete) - POISONOUS:</strong> Chalky pale cap, blood-red pores.</li>
-            <li>❌ <strong>Tylopilus felleus (Bitter Bolete) - INEDIBLE:</strong> Pinkish pores, coarse dark black/brown raised netting. Overpoweringly bitter.</li>
-            <li><strong>Rule:</strong> Blue-staining pores with a smooth brown stem under conifers = safe Bay Bolete.</li>
-          </ul>
-        `;
-      } else if (this.currentSpecies === 'laetiporus_sulphureus') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Appearance:</strong> Vivid neon sulfur-yellow and bright orange overlapping bracket shelves.</li>
-            <li><strong>Underside:</strong> Minute sulfur-yellow pores (NO GILLS).</li>
-            <li><strong>Habitat:</strong> Directly on living or standing dead hardwood trunks (especially mature Oak).</li>
-            <li><strong>Flesh:</strong> Thick, succulent when young; shreds and cooks like tender chicken breast.</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>✅ <strong>Unmistakable:</strong> No toxic bracket fungus in Europe shares this neon sulfur coloration.</li>
-            <li>⚠️ <strong>Safety Rule:</strong> Must be cooked thoroughly. Avoid brackets growing on toxic Yew (Taxus).</li>
-          </ul>
-        `;
-      } else if (this.currentSpecies === 'macrolepiota_procera') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Size:</strong> Giant cap (15 to 30 cm across), tall slender stipe (up to 40 cm).</li>
-            <li><strong>Stem:</strong> Bulbous base, covered with distinct <strong>snakeskin zig-zag bands (tigré)</strong>.</li>
-            <li><strong>Ring:</strong> Thick, double-edged ring that <strong>SLIDES FREELY</strong> like a bracelet on the stem.</li>
-            <li><strong>Gills:</strong> Pure white/cream, crowded, completely free from the stem.</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>❌ <strong>RULE 1 (STRICT):</strong> NEVER harvest specimens with cap smaller than 10 cm across!</li>
-            <li>❌ <strong>RULE 2:</strong> NEVER harvest specimens whose ring is fixed/immobile.</li>
-            <li><strong>Avoids:</strong> Deadly small Lepiota species (Lepiota brunneoincarnata, L. cristata).</li>
-          </ul>
-        `;
-      } else if (this.currentSpecies === 'suillus_luteus') {
-        idKeysHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li><strong>Cap:</strong> Chocolate brown, covered with a thick slimy/gelatinous peelable skin.</li>
-            <li><strong>Pores:</strong> Bright yellow to olive-yellow tubes with pale milky droplets when young.</li>
-            <li><strong>Ring:</strong> Conspicuous whitish/purplish membranous ring on upper stipe.</li>
-            <li><strong>Habitat:</strong> Strictly obligate mycorrhizal symbiont under 2-needle Pines (Pinus).</li>
-          </ul>
-        `;
-        lookalikesHtml = `
-          <ul style="padding-left:1.2rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <li>✅ <strong>No Toxic Lookalikes:</strong> No poisonous boletes associate exclusively with pine needle litter.</li>
-            <li>⚠️ <strong>Preparation Rule:</strong> Always peel and discard the slimy cuticle before cooking to avoid digestive upset.</li>
-          </ul>
-        `;
-      }
+      modalContent.querySelector('#btn-guide-anatomy')?.addEventListener('click', () => {
+        modalBackdrop.classList.add('hidden');
+        this.navigateCallback?.('anatomy');
+      });
 
-      modalContent.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:1.25rem;">
-          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:1rem;">
-            <h4 style="color:#d8b4fe; margin-bottom:0.4rem;">🍄 ${details.commonName}</h4>
-            <p><strong>Habitat & Symbionts:</strong> ${details.symbionts.join(', ')}</p>
-            <p><strong>Soil Preference:</strong> ${details.optimalPH}</p>
-            <p><strong>Season Window:</strong> ${details.seasonWindow}</p>
-          </div>
-
-          <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:1rem;">
-            <h4 style="color:#34d399; margin-bottom:0.4rem;">🔍 Positive Identification Keys</h4>
-            ${idKeysHtml}
-          </div>
-
-          <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:1rem;">
-            <h4 style="color:#f87171; margin-bottom:0.4rem;">⚠️ Toxic & Inedible Lookalikes (Safety Guide)</h4>
-            ${lookalikesHtml}
-          </div>
-
-          <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:1rem;">
-            <h4 style="color:#fbbf24; margin-bottom:0.4rem;">🚑 Regional Poison Control Hotlines</h4>
-            <p><strong>Germany (GIZ-Nord / Göttingen):</strong> +49 551 19240 | Berlin: +49 30 19240</p>
-            <p><strong>France (CAPTV Grand Ouest Rennes/Angers):</strong> +33 2 41 48 21 21 | SAMU: 15</p>
-            <p><strong>European Emergency:</strong> 112</p>
-          </div>
-        </div>
-      `;
+      modalContent.querySelector('#btn-guide-dedicated')?.addEventListener('click', () => {
+        modalBackdrop.classList.add('hidden');
+        this.navigateCallback?.('mushroom', this.currentSpecies);
+      });
     };
 
     openGuideBtn?.addEventListener('click', () => {
@@ -608,9 +477,6 @@ class ShroomRoomApp {
   }
 }
 
-// Bootstrap on DOM Loaded
-window.addEventListener('DOMContentLoaded', () => {
-  const app = new ShroomRoomApp();
-  app.init();
-});
+// Mount Vue Application
+createApp(App).mount('#app');
 

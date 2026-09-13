@@ -2,6 +2,15 @@ import { BasemapId, SpeciesId } from '../types';
 import { getDaysToSeasonMidpoint } from '../scoring/season';
 import { ScoringEngine } from '../scoring/pipelines';
 import { SPECIES_DETAILS } from '../services/habitatDataService';
+import {
+  currentLocale,
+  i18n,
+  getSpeciesDisplayName,
+  getSpeciesShortName,
+  getSpeciesCommonName,
+  getSpeciesLatinName
+} from '../i18n';
+import { SPECIES_I18N } from '../i18n/translations';
 
 export interface HeaderBarCallbacks {
   onSpeciesChange: (speciesId: SpeciesId) => void;
@@ -10,30 +19,6 @@ export interface HeaderBarCallbacks {
   onRefreshWeather: () => void;
   onToggleWaypointMode: (active: boolean) => void;
 }
-
-const SPECIES_BASE_LABELS: Record<SpeciesId, string> = {
-  boletus: 'Boletus edulis (King Bolete / Porcini)',
-  cantharellus: 'Cantharellus cibarius (Golden Chanterelle)',
-  hydnum: 'Hydnum repandum (Wood Hedgehog / Pied-de-mouton)',
-  craterellus_cornucopioides: 'Craterellus cornucopioides (Black Trumpet)',
-  craterellus_tubaeformis: 'Craterellus tubaeformis (Trumpet Chanterelle)',
-  imleria_badia: 'Imleria badia (Bay Bolete / Maronen-Röhrling)',
-  laetiporus_sulphureus: 'Laetiporus sulphureus (Chicken of the Woods)',
-  macrolepiota_procera: 'Macrolepiota procera (Parasol Mushroom)',
-  suillus_luteus: 'Suillus luteus (Slippery Jack / Butterpilz)'
-};
-
-const SPECIES_SHORT_LABELS: Record<SpeciesId, string> = {
-  boletus: 'Porcini',
-  cantharellus: 'Chanterelle',
-  hydnum: 'Hedgehog',
-  craterellus_cornucopioides: 'Black Trumpet',
-  craterellus_tubaeformis: 'Yellowfoot',
-  imleria_badia: 'Bay Bolete',
-  laetiporus_sulphureus: 'Chicken Woods',
-  macrolepiota_procera: 'Parasol',
-  suillus_luteus: 'Slippery Jack'
-};
 
 export class HeaderBar {
   private speciesSelect: HTMLSelectElement;
@@ -125,7 +110,7 @@ export class HeaderBar {
 
     const currentSelected = (this.speciesSelect.value as SpeciesId) || 'boletus';
     const dateStr = this.dateInput.value || new Date().toISOString().split('T')[0];
-    const allSpecies = Object.keys(SPECIES_BASE_LABELS) as SpeciesId[];
+    const allSpecies = Object.keys(SPECIES_I18N) as SpeciesId[];
 
     const sorted = allSpecies.map(sp => {
       const diffDays = getDaysToSeasonMidpoint(sp, dateStr);
@@ -140,16 +125,19 @@ export class HeaderBar {
       const isSelected = item.sp === currentSelected;
 
       let pillClass = 'off';
-      let pillText = 'Off Season';
+      let pillText = i18n.value.ui.offSeason;
       if (item.isActive) {
         if (item.diffDays <= 20) {
           pillClass = 'peak';
-          pillText = `Peak Season (±${Math.round(item.diffDays)}d)`;
+          pillText = `${i18n.value.ui.peakSeason} (±${Math.round(item.diffDays)}d)`;
         } else {
           pillClass = 'active';
-          pillText = 'In Season';
+          pillText = i18n.value.ui.inSeason;
         }
       }
+
+      const latinName = getSpeciesLatinName(item.sp);
+      const commonName = getSpeciesCommonName(item.sp, currentLocale.value);
 
       const card = document.createElement('div');
       card.className = `species-card-item ${isSelected ? 'active' : ''}`;
@@ -159,10 +147,10 @@ export class HeaderBar {
           <span class="species-badge-indicator" style="background-color:${details?.badgeColor || '#a855f7'}; color:${details?.badgeColor || '#a855f7'};"></span>
           <div class="species-card-text">
             <div class="species-card-title-row">
-              <span class="species-latin-name">${details?.name || item.sp}</span>
+              <span class="species-latin-name">${latinName}</span>
               <span class="species-status-pill ${pillClass}">${pillText}</span>
             </div>
-            <div class="species-common-desc">${details?.commonName || ''}</div>
+            <div class="species-common-desc">${commonName}</div>
           </div>
         </div>
         ${isSelected ? '<span class="species-check-mark">✓</span>' : ''}
@@ -187,7 +175,7 @@ export class HeaderBar {
 
   public updateNavLabel(speciesId: SpeciesId) {
     if (this.speciesNavLabel) {
-      this.speciesNavLabel.textContent = SPECIES_SHORT_LABELS[speciesId] || 'Species';
+      this.speciesNavLabel.textContent = getSpeciesShortName(speciesId, currentLocale.value);
     }
   }
 
@@ -197,7 +185,7 @@ export class HeaderBar {
    */
   public sortSpeciesDropdown(dateStr: string) {
     const currentSelected = (this.speciesSelect.value as SpeciesId) || 'boletus';
-    const allSpecies = Object.keys(SPECIES_BASE_LABELS) as SpeciesId[];
+    const allSpecies = Object.keys(SPECIES_I18N) as SpeciesId[];
 
     const sorted = allSpecies.map(sp => {
       const diffDays = getDaysToSeasonMidpoint(sp, dateStr);
@@ -209,11 +197,11 @@ export class HeaderBar {
     for (const item of sorted) {
       const opt = document.createElement('option');
       opt.value = item.sp;
-      const baseName = SPECIES_BASE_LABELS[item.sp];
+      const formattedName = getSpeciesDisplayName(item.sp, currentLocale.value);
       const status = item.isActive
-        ? (item.diffDays <= 20 ? '🟢 Peak Season' : '🟢 In Season')
-        : '⚪ Off Season';
-      opt.textContent = `${baseName} — ${status}`;
+        ? (item.diffDays <= 20 ? `🟢 ${i18n.value.ui.peakSeason}` : `🟢 ${i18n.value.ui.inSeason}`)
+        : `⚪ ${i18n.value.ui.offSeason}`;
+      opt.textContent = `${formattedName} — ${status}`;
       this.speciesSelect.appendChild(opt);
     }
 
@@ -222,6 +210,12 @@ export class HeaderBar {
     } else if (sorted.length > 0) {
       this.speciesSelect.value = sorted[0].sp;
     }
+    this.updateNavLabel(this.speciesSelect.value as SpeciesId);
+  }
+
+  public refreshTranslations() {
+    const dateStr = this.dateInput.value || new Date().toISOString().split('T')[0];
+    this.sortSpeciesDropdown(dateStr);
     this.updateNavLabel(this.speciesSelect.value as SpeciesId);
   }
 
