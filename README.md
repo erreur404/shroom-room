@@ -26,17 +26,33 @@ npm run dev:all
 
 ### Option B: Run in Separate Terminals
 
-#### Terminal 1 — Backend Tile Baker Server (Port 3001)
+#### Terminal 1 — Backend Tile Baker Server (Port 3002)
 ```bash
-npm run server
+npm run dev:server
 ```
 *Accessible at `http://localhost:3001` (Health check: `http://localhost:3001/api/health`)*
 
 #### Terminal 2 — Frontend Web App (Port 5173)
 ```bash
-npm run dev
+npm run dev:frontend
 ```
-*Open your browser at `http://localhost:5173`*
+*(Also accessible via `npm run dev`)*
+
+---
+
+### Production Deployment & Execution
+
+#### Build for production
+```bash
+npm run prod:build
+```
+
+#### Run pure JS production server
+```bash
+npm run prod:start
+# or
+npm start
+```
 
 ---
 
