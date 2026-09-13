@@ -59,6 +59,11 @@ export class HeaderBar {
     this.sortSpeciesDropdown(today);
     this.updateNavLabel((this.speciesSelect.value as SpeciesId) || 'boletus');
 
+    // On mobile (< 768px), enforce today's date
+    if (window.innerWidth <= 768) {
+      this.dateInput.value = today;
+    }
+
     // Quick-select Mushroom Species button (Header Action & Mobile Icon)
     this.selectSpeciesBtn?.addEventListener('click', () => {
       this.openSpeciesModal();
@@ -82,8 +87,21 @@ export class HeaderBar {
 
     this.basemapSelect.addEventListener('change', () => {
       const basemapId = this.basemapSelect.value as BasemapId;
+      const mobileBasemapSelect = document.getElementById('mobile-basemap-select') as HTMLSelectElement | null;
+      if (mobileBasemapSelect) mobileBasemapSelect.value = basemapId;
       this.callbacks.onBasemapChange(basemapId);
     });
+
+    // Mobile Basemap Picker inside the mobile Layer drawer
+    const mobileBasemapSelect = document.getElementById('mobile-basemap-select') as HTMLSelectElement | null;
+    if (mobileBasemapSelect) {
+      mobileBasemapSelect.value = this.basemapSelect.value;
+      mobileBasemapSelect.addEventListener('change', () => {
+        const basemapId = mobileBasemapSelect.value as BasemapId;
+        this.basemapSelect.value = basemapId;
+        this.callbacks.onBasemapChange(basemapId);
+      });
+    }
 
     this.dateInput.addEventListener('change', () => {
       this.sortSpeciesDropdown(this.dateInput.value);

@@ -246,6 +246,7 @@ function onLocaleChange(event: Event) {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  container-type: inline-size;
 }
 
 .diagram-image {
@@ -274,15 +275,15 @@ function onLocaleChange(event: Event) {
 /* Category header labels on the left margin */
 .category-label {
   font-weight: 800;
-  font-size: clamp(12px, 1.95cqw, 18px);
+  font-size: clamp(8px, 2.3cqw, 17px);
   color: #0f172a;
   letter-spacing: -0.01em;
 }
 
 /* Normal pointer labels */
 .pointer-label {
-  font-weight: 500;
-  font-size: clamp(10px, 1.7cqw, 15px);
+  font-weight: 600;
+  font-size: clamp(7px, 1.8cqw, 14px);
   color: #1e293b;
 }
 

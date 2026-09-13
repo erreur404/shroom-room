@@ -198,8 +198,24 @@ export const TRANSLATIONS: Record<SupportedLocale, TranslationSchema> = {
       peakSeason: 'Pleine saison',
       inSeason: 'En saison',
       offSeason: 'Hors saison',
-      dedicatedPageTitle: 'Page dédiée à l’espèce',
-      dedicatedPageNotice: 'Cette page dédiée sera fournie prochainement. L’infrastructure de navigation est opérationnelle !'
+      dedicatedPageTitle: 'Fiche d’identification & Sécurité',
+      dedicatedPageNotice: 'Consultez les critères diagnostiques et les confusions toxiques avant toute cueillette.',
+      firstLaunchTitle: '⚠️ Consignes de Sécurité & Responsabilité',
+      firstLaunchBody1: 'Shroom Room modélise la probabilité d’habitat selon des critères écologiques et météorologiques. Cette application ne certifie en aucun cas la comestibilité.',
+      firstLaunchBody2: 'Les champignons sauvages comptent des espèces mortelles. Ne consommez jamais un spécimen sur la seule base d’une application numérique ou de photos.',
+      firstLaunchBody3: 'Faites systématiquement contrôler votre récolte en personne par un pharmacien ou une société mycologique qualifiée.',
+      firstLaunchAcknowledge: 'J’ai compris — Accéder à la carte',
+      safetyAlertHeader: 'Avertissement Vital de Sécurité',
+      safetyAlertText: 'Ne consommez JAMAIS un champignon sans validation formelle par un pharmacien ou un mycologue qualifié. En cas de doute, abstenez-vous formellement.',
+      diagnosticChecklistTitle: 'Check-list Diagnostique de Terrain',
+      diagnosticChecklistHint: 'Cochez chaque critère morphologique au fur et à mesure de votre examen en forêt pour valider l’identification.',
+      lookalikesTitle: 'Espèces Confuses & Pièges Toxiques',
+      lookalikesSubtitle: 'Vérifiez impérativement ces confusions avant de mettre le champignon dans votre panier.',
+      crucialDifferences: 'Différences cruciales :',
+      offlineBanner: 'Mode Hors-ligne — Affichage des zones cartographiques en cache',
+      sporePrintLabel: 'Couleur de la sporée',
+      learnAnatomyLink: 'Voir sur le schéma anatomique →',
+      mobileBasemapsTitle: 'Fonds de carte'
     }
   },
   en: {
@@ -260,8 +276,24 @@ export const TRANSLATIONS: Record<SupportedLocale, TranslationSchema> = {
       peakSeason: 'Peak Season',
       inSeason: 'In Season',
       offSeason: 'Off Season',
-      dedicatedPageTitle: 'Dedicated Species Page',
-      dedicatedPageNotice: 'This dedicated species page will be provided soon. The pages infrastructure is ready!'
+      dedicatedPageTitle: 'Identification Guide & Safety',
+      dedicatedPageNotice: 'Inspect diagnostic criteria and dangerous lookalikes before harvesting.',
+      firstLaunchTitle: '⚠️ Foraging Safety Notice & Terms',
+      firstLaunchBody1: 'Shroom Room models habitat suitability based on ecological variables and meteorological events. It does NOT certify mushroom edibility.',
+      firstLaunchBody2: 'Wild mushrooms include deadly poisonous species. Never consume any wild mushroom based solely on an application or digital photos.',
+      firstLaunchBody3: 'Always have your harvest physically inspected by a certified pharmacist, toxicologist, or mycological society expert.',
+      firstLaunchAcknowledge: 'I Understand — Continue to Map',
+      safetyAlertHeader: 'Crucial Foraging & Consumption Warning',
+      safetyAlertText: 'Never consume any wild specimen without independent physical verification by a qualified pharmacist or mycologist. When in doubt, leave it out!',
+      diagnosticChecklistTitle: 'Field Diagnostic Checklist',
+      diagnosticChecklistHint: 'Tick each morphological checkpoint as you examine your specimen in the field to verify its identity.',
+      lookalikesTitle: 'Dangerous Lookalikes (Do Not Confuse!)',
+      lookalikesSubtitle: 'Examine these toxic or unpalatable lookalikes before picking.',
+      crucialDifferences: 'Key Distinguishing Differences:',
+      offlineBanner: 'Offline Mode — Displaying cached map areas',
+      sporePrintLabel: 'Spore Print Color',
+      learnAnatomyLink: 'View in Anatomy Diagram →',
+      mobileBasemapsTitle: 'Basemaps'
     }
   },
   de: {
@@ -322,8 +354,24 @@ export const TRANSLATIONS: Record<SupportedLocale, TranslationSchema> = {
       peakSeason: 'Hauptsaison',
       inSeason: 'In Saison',
       offSeason: 'Außerhalb Saison',
-      dedicatedPageTitle: 'Spezielle Artseite',
-      dedicatedPageNotice: 'Diese spezielle Artseite wird in Kürze bereitgestellt. Die Seiten-Infrastruktur steht bereit!'
+      dedicatedPageTitle: 'Bestimmungsleitfaden & Sicherheit',
+      dedicatedPageNotice: 'Prüfen Sie Diagnosemerkmale und giftige Verwechslungen vor dem Sammeln.',
+      firstLaunchTitle: '⚠️ Sicherheitshinweise & Nutzungsbedingungen',
+      firstLaunchBody1: 'Shroom Room modelliert die Habitat-Eignung anhand ökologischer Variablen und Wetterdaten. Die App zertifiziert keinesfalls die Genießbarkeit.',
+      firstLaunchBody2: 'Unter Wildpilzen gibt es tödlich giftige Arten. Verzehren Sie niemals Wildpilze allein auf Basis einer App oder von Fotos.',
+      firstLaunchBody3: 'Lassen Sie gesammelte Pilze stets von einer qualifizierten Pilzberatungsstelle oder einem Apotheker physisch prüfen.',
+      firstLaunchAcknowledge: 'Verstanden — Weiter zur Karte',
+      safetyAlertHeader: 'Lebenswichtige Sicherheitswarnung',
+      safetyAlertText: 'Verzehren Sie NIEMALS Wildpilze ohne fachkundige physische Überprüfung durch einen Pilzsachverständigen. Bei geringstem Zweifel niemals verzehren!',
+      diagnosticChecklistTitle: 'Feld-Diagnose-Checkliste',
+      diagnosticChecklistHint: 'Haken Sie jedes morphologische Merkmal während der Begutachtung im Wald ab, um die Bestimmung abzusichern.',
+      lookalikesTitle: 'Gefährliche Verwechslungsarten',
+      lookalikesSubtitle: 'Prüfen Sie diese giftigen oder ungenießbaren Doppelgänger sorgfältig.',
+      crucialDifferences: 'Wesentliche Unterscheidungsmerkmale:',
+      offlineBanner: 'Offline-Modus — Zwischengespeicherte Kartenausschnitte werden angezeigt',
+      sporePrintLabel: 'Sporenpulverfarbe',
+      learnAnatomyLink: 'Im Anatomiediagramm ansehen →',
+      mobileBasemapsTitle: 'Basiskarten'
     }
   },
   ja: {
@@ -384,8 +432,24 @@ export const TRANSLATIONS: Record<SupportedLocale, TranslationSchema> = {
       peakSeason: '最盛期',
       inSeason: '発生中',
       offSeason: 'シーズン外',
-      dedicatedPageTitle: '種別専用ページ',
-      dedicatedPageNotice: 'この専用ページは準備中です。画面遷移基盤は動作しています！'
+      dedicatedPageTitle: '同定ガイド & 安全基準',
+      dedicatedPageNotice: '採取前に形態的特徴と有毒な類似種を必ず確認してください。',
+      firstLaunchTitle: '⚠️ 安全上の注意と免責事項',
+      firstLaunchBody1: 'Shroom Roomは生態系要因と気象データに基づく生息適地モデルです。食用可能性を保証するものではありません。',
+      firstLaunchBody2: '野生キノコには猛毒種が含まれます。アプリや写真のみの判定で絶対に口にしないでください。',
+      firstLaunchBody3: '採取したキノコは必ず専門家や薬剤師等に対面で鑑定してもらってください。',
+      firstLaunchAcknowledge: '理解しました — 地図へ進む',
+      safetyAlertHeader: '命に関わる重要な安全警告',
+      safetyAlertText: '有資格者による対面鑑定を受けるまで、いかなる野生キノコも口にしないでください。少しでも疑わしい場合は絶対に採取・摂取しないでください。',
+      diagnosticChecklistTitle: '野外同定チェックリスト',
+      diagnosticChecklistHint: '現地で実物を観察しながら各特徴をチェックし、同定を確認してください。',
+      lookalikesTitle: '危険な類似種 (誤食注意！)',
+      lookalikesSubtitle: '採取前にこれらの有毒・不食類似種との識別点を必ず確認してください。',
+      crucialDifferences: '決定的な識別ポイント：',
+      offlineBanner: 'オフラインモード — キャッシュされた地図を表示中',
+      sporePrintLabel: '胞子紋 (ほうしもん) の色',
+      learnAnatomyLink: '解剖ダイアグラムで部位を確認 →',
+      mobileBasemapsTitle: '背景地図'
     }
   }
 };

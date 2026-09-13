@@ -68,5 +68,21 @@ export interface TranslationSchema {
     offSeason: string;
     dedicatedPageTitle: string;
     dedicatedPageNotice: string;
+    firstLaunchTitle: string;
+    firstLaunchBody1: string;
+    firstLaunchBody2: string;
+    firstLaunchBody3: string;
+    firstLaunchAcknowledge: string;
+    safetyAlertHeader: string;
+    safetyAlertText: string;
+    diagnosticChecklistTitle: string;
+    diagnosticChecklistHint: string;
+    lookalikesTitle: string;
+    lookalikesSubtitle: string;
+    crucialDifferences: string;
+    offlineBanner: string;
+    sporePrintLabel: string;
+    learnAnatomyLink: string;
+    mobileBasemapsTitle: string;
   };
 }

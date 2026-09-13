@@ -17,8 +17,8 @@
             <span class="icon">🍄</span> <span class="btn-text-label" id="current-species-nav-label">Porcini</span>
           </button>
 
-          <!-- Field Guide Button -->
-          <button id="btn-show-safety" class="btn btn-secondary" :title="i18n.ui.fieldGuide">
+          <!-- Field Guide / Species ID Button -->
+          <button id="btn-show-safety" class="btn btn-secondary btn-field-guide" :title="i18n.ui.fieldGuide" @click="goToFieldGuide">
             <span class="icon">📖</span> <span class="btn-text-label">{{ i18n.ui.fieldGuide }}</span>
           </button>
 
@@ -60,7 +60,7 @@
           </div>
         </div>
 
-        <div class="control-group">
+        <div class="control-group control-group-basemap">
           <label for="basemap-select">{{ i18n.ui.basemap }}</label>
           <div class="custom-select-wrapper">
             <select id="basemap-select" class="custom-select">
@@ -71,7 +71,7 @@
           </div>
         </div>
 
-        <div class="control-group">
+        <div class="control-group control-group-date">
           <label for="simulation-date">{{ i18n.ui.simulationDate }}</label>
           <input type="date" id="simulation-date" class="date-input" />
         </div>
@@ -82,6 +82,12 @@
     <main class="app-body">
       <!-- Interactive Map Area -->
       <div class="map-container">
+        <!-- Persistent Offline Connection Banner -->
+        <div v-if="isOffline" class="offline-banner">
+          <span class="offline-icon">📡</span>
+          <span>{{ i18n.ui.offlineBanner }}</span>
+        </div>
+
         <div id="map"></div>
 
         <!-- Floating Map Action Buttons (FABs) -->
@@ -112,6 +118,18 @@
             <button id="btn-toggle-legend" class="btn-icon">▾</button>
           </div>
           <div class="legend-body" id="legend-content">
+            <!-- Mobile Basemap Selector (Accessible when drawer is opened) -->
+            <div class="legend-section mobile-basemap-section">
+              <label class="mobile-basemap-label">{{ i18n.ui.mobileBasemapsTitle }}</label>
+              <div class="custom-select-wrapper">
+                <select id="mobile-basemap-select" class="custom-select">
+                  <option value="opentopomap" selected>OpenTopoMap (Contours & Forest)</option>
+                  <option value="cyclosm">CyclOSM (Hiking Paths & Trails)</option>
+                  <option value="osm">OpenStreetMap Standard</option>
+                </select>
+              </div>
+            </div>
+
             <div class="layer-toggle-row">
               <label class="layer-checkbox-label">
                 <input type="checkbox" id="toggle-suitability" checked />
@@ -286,11 +304,33 @@
         </div>
       </div>
     </div>
+
+    <!-- First-Launch Foraging Safety Disclaimer Modal -->
+    <div id="first-launch-modal" class="modal-backdrop" v-if="showFirstLaunchModal">
+      <div class="modal-card glass-panel safety-disclaimer-modal-card">
+        <div class="disclaimer-modal-header">
+          <span class="disclaimer-alert-icon">⚠️</span>
+          <h2>{{ i18n.ui.firstLaunchTitle }}</h2>
+        </div>
+        <div class="disclaimer-modal-body">
+          <p class="disclaimer-lead">{{ i18n.ui.firstLaunchBody1 }}</p>
+          <div class="disclaimer-warning-box">
+            <strong>☠️ {{ i18n.ui.firstLaunchBody2 }}</strong>
+          </div>
+          <p class="disclaimer-advice">🏥 {{ i18n.ui.firstLaunchBody3 }}</p>
+        </div>
+        <div class="disclaimer-modal-footer">
+          <button class="btn btn-primary btn-block btn-lg" @click="dismissFirstLaunchModal">
+            {{ i18n.ui.firstLaunchAcknowledge }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { ShroomRoomApp } from '../main';
 import { currentLocale, setLocale, i18n } from '../i18n';
 import { SupportedLocale } from '../i18n/types';
@@ -301,13 +341,42 @@ const emit = defineEmits<{
 }>();
 
 let appInstance: ShroomRoomApp | null = null;
+const isOffline = ref(!navigator.onLine);
+const showFirstLaunchModal = ref(false);
+
+function updateOnlineStatus() {
+  isOffline.value = !navigator.onLine;
+}
+
+function dismissFirstLaunchModal() {
+  try {
+    localStorage.setItem('shroom_room_safety_ack', 'true');
+  } catch {
+    // Ignore localStorage errors
+  }
+  showFirstLaunchModal.value = false;
+}
 
 onMounted(() => {
+  try {
+    showFirstLaunchModal.value = !localStorage.getItem('shroom_room_safety_ack');
+  } catch {
+    showFirstLaunchModal.value = false;
+  }
+
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+
   appInstance = new ShroomRoomApp();
   appInstance.setNavigateCallback((page, speciesId) => {
     emit('navigate', page, speciesId);
   });
   appInstance.init();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('online', updateOnlineStatus);
+  window.removeEventListener('offline', updateOnlineStatus);
 });
 
 watch(currentLocale, () => {
@@ -321,6 +390,11 @@ function onLocaleChange(event: Event) {
 
 function goToAnatomy() {
   emit('navigate', 'anatomy');
+}
+
+function goToFieldGuide() {
+  const species = appInstance?.getCurrentSpecies() || 'boletus';
+  emit('navigate', 'mushroom', species);
 }
 
 defineExpose({
