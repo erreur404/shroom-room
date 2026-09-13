@@ -199,7 +199,7 @@ app.get('/api/tiles/:tileId', (req, res) => {
   const { tileId } = req.params;
   const tile = tileStore.loadTile(tileId);
   if (!tile) {
-    return res.status(404).json({ error: `Tile ${tileId} not found or unbaked` });
+    return res.json({ status: 'unbaked', tileId, baked: false });
   }
   res.json(tile);
 });

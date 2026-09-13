@@ -192,10 +192,12 @@ export class HabitatDataService {
       const res = await fetch(`${API_BASE_URL}/api/tiles/${tileId}`);
 
       if (res.ok) {
-        const data: BakedTileData = await res.json();
-        this.tileCache.set(tileId, data);
-        this.notifyUpdate();
-        return data;
+        const data = await res.json();
+        if (data && data.status !== 'unbaked' && data.cells) {
+          this.tileCache.set(tileId, data as BakedTileData);
+          this.notifyUpdate();
+          return data as BakedTileData;
+        }
       }
     } catch (err) {
       // Backend server may be starting or offline

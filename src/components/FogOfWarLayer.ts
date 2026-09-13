@@ -83,9 +83,10 @@ export class FogOfWarLayer {
     try {
       const res = await fetch(`${API_BASE_URL}/api/tiles/${tileId}`);
       if (!res.ok) return;
-      const tileData: BakedTileData = await res.json();
-      this.loadedTileData.set(tileId, tileData);
-      this.callbacks.onTileLoaded(tileData);
+      const tileData = await res.json();
+      if (!tileData || tileData.status === 'unbaked' || !tileData.cells) return;
+      this.loadedTileData.set(tileId, tileData as BakedTileData);
+      this.callbacks.onTileLoaded(tileData as BakedTileData);
     } catch (err) {
       console.warn(`[FogOfWar] Could not load baked tile ${tileId}`, err);
     }
