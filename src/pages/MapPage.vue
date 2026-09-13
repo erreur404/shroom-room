@@ -96,10 +96,6 @@
             <span class="fab-icon">🎯</span>
             <span class="fab-label">{{ i18n.ui.locate }}</span>
           </button>
-          <button id="btn-pin-gps" class="btn-fab btn-pin" :title="i18n.ui.pinSpot">
-            <span class="fab-icon">🍄</span>
-            <span class="fab-label">{{ i18n.ui.pinSpot }}</span>
-          </button>
           <button id="btn-mobile-layers" class="btn-fab btn-layers mobile-only" :title="i18n.ui.layers">
             <span class="fab-icon">🥞</span>
             <span class="fab-label">{{ i18n.ui.layers }}</span>

@@ -237,12 +237,12 @@ export class ShroomRoomApp {
     const score = env
       ? this.scoringEngine.evaluate(this.currentSpecies, env)
       : {
-          suitabilityScore: 0.5,
-          weatherScore: 0.5,
-          overallProbability: 0.5,
-          isSeasonActive: true,
-          factors: { pHScore: 0.5, hostTreeScore: 0.5, rainScore: 0.5, tempScore: 0.5, tempDrop: 0 }
-        };
+        suitabilityScore: 0.5,
+        weatherScore: 0.5,
+        overallProbability: 0.5,
+        isSeasonActive: true,
+        factors: { pHScore: 0.5, hostTreeScore: 0.5, rainScore: 0.5, tempScore: 0.5, tempDrop: 0 }
+      };
 
     const newWpt: ForagingWaypoint = {
       id: `wpt-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -434,21 +434,6 @@ export class ShroomRoomApp {
       waypointDrawer?.classList.remove('open');
       mobileDrawerBtn?.classList.remove('active');
       setTimeout(() => this.mapHarness.invalidateSize(), 300);
-    });
-
-    // 1-Tap Pin Current GPS Location Find
-    const pinGpsBtn = document.getElementById('btn-pin-gps') as HTMLButtonElement;
-    pinGpsBtn?.addEventListener('click', () => {
-      this.showToast('🎯 Getting GPS to pin your find...', 3000);
-      this.mapHarness.locateUser(
-        (coords) => {
-          this.addWaypointAt(coords.lat, coords.lon, true);
-          this.showToast(`🍄 Pinned spot at GPS (${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)})! Saved to device.`, 4000);
-        },
-        (err) => {
-          this.showToast(`⚠️ ${err}`, 5000);
-        }
-      );
     });
   }
 
