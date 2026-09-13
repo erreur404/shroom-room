@@ -1589,8 +1589,7 @@ input[type="range"] {
 
 /* 44px touch targets on mobile & touch devices */
 @media (max-width: 768px) {
-  .control-group-date,
-  .control-group-basemap {
+  .control-group-date {
     display: none !important;
   }
 

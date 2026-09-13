@@ -60,17 +60,6 @@
           </div>
         </div>
 
-        <div class="control-group control-group-basemap">
-          <label for="basemap-select">{{ i18n.ui.basemap }}</label>
-          <div class="custom-select-wrapper">
-            <select id="basemap-select" class="custom-select">
-              <option value="opentopomap" selected>OpenTopoMap (Contours & Forest)</option>
-              <option value="cyclosm">CyclOSM (Hiking Paths & Trails)</option>
-              <option value="osm">OpenStreetMap Standard</option>
-            </select>
-          </div>
-        </div>
-
         <div class="control-group control-group-date">
           <label for="simulation-date">{{ i18n.ui.simulationDate }}</label>
           <input type="date" id="simulation-date" class="date-input" />
