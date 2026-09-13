@@ -219,7 +219,73 @@ This document details the diagnostic field identification rules, toxic and inedi
 
 ---
 
-## 10. GPX 1.1 Embedded Field Guide Formatting
+## 10. Coprinus comatus (Shaggy Mane / Coprin chevelu / Schopftintling)
+
+### A. Habitat & Search Strategy
+- **Ecology**: Saprotrophic decomposer of rich organic matter, nitrogenous humus, and disturbed soils.
+- **Search Zone**: Grassy woodland margins, parklands, field paths, roadside clearings, nutrient-rich meadows, and compost heaps. Often fruits in dense, synchronous troops.
+- **Season**: Mid-August through mid-November (peak September–October).
+
+### B. Diagnostic Identification Keys (The "Shaggy Mane Checklist")
+1. **Cap**: Tall, strictly cylindrical to thimble-shaped (5–15 cm high), snow-white, densely clothed with soft, curled, upturned woolly scales (*comatus* = shaggy/hairy). Does **not** expand into a flat umbrella while edible.
+2. **Gills**: Free from stem, extremely crowded, chalk-white in youth. They turn pink from the bottom rim upward, then rapidly autodigest into liquid black ink (*autodeliquescence*).
+3. **Stem (Stipe) & Ring**: Tall (10–25 cm), slender, silky-white, hollow. Bears a delicate white membranous ring that is loose and slides freely up and down the stem.
+4. **Flesh**: Fragile, tender white cap flesh with a mild nutty taste and pleasant delicate mushroom scent.
+
+### C. Toxic Lookalikes & Critical Freshness Rules
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      SHAGGY MANE FORAGING RULES                         │
+│  1. ONLY harvest young, cylindrical buttons with PURE WHITE GILLS.      │
+│  2. NEVER eat specimens whose gills have turned pink or started inking. │
+│  3. PREPARE and COOK within 2 to 4 hours of harvest (autolyzes quickly).│
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+1. ❌ **Coprinopsis atramentaria (Common Inkcap / Coprin noir d'encre / Falten-Tintling)** — **TOXIC WITH ALCOHOL (Coprine poisoning)**:
+   - *Cap*: Smooth or radially furrowed, ash-grey to brownish-grey (lacks shaggy, upturned white woolly scales).
+   - *Toxicity*: Contains coprine, which inhibits aldehyde dehydrogenase. Consuming alcohol within 48–72 hours of ingestion causes severe flushing, tachycardia, nausea, and vomiting (disulfiram/antabuse reaction).
+2. ❌ **Chlorophyllum molybdites (False Parasol / Lépiote à lames vertes)** — **TOXIC (Severe gastrointestinal poisoning)**:
+   - *Cap*: Expands into a broad, flat parasol; gills and spore print are tinted olive-green. Does not autodigest into ink.
+
+---
+
+## 11. Sparassis crispa (Cauliflower Mushroom / Sparassis crépu / Krause Glucke)
+
+### A. Habitat & Search Strategy
+- **Ecology**: Parasitic and lignicolous saprotroph causing brown rot of root systems and heartwood of mature conifers.
+- **Symbionts**: Overwhelmingly associated with mature **Scots Pine (*Pinus sylvestris*)** (>90%), occasionally Norway Spruce (*Picea abies*) or Larch (*Larix*).
+- **Search Zone**: Directly at the base of living pine trunks, over exposed root collars, or on old pine stumps. Tends to recur annually at the base of the same tree.
+- **Season**: September through November.
+
+### B. Diagnostic Identification Keys (The "Cauliflower Mushroom Checklist")
+1. **Form & Growth**: Massive spherical, brain- or sponge-like cluster (10–40 cm wide, weighing up to 2–5 kg), composed of hundreds of tightly packed, wavy, curly, ribbon-like ruffled lobes with curled/crinkled edges.
+2. **Color**: Cream-white to straw-yellow or pale ochre when fresh. Tips of the ruffled lobes turn brownish with age.
+3. **Base & Attachment**: Anchored deep into the tree roots or trunk collar by a thick, tough, blackish-brown central rooting stipe.
+4. **Flesh**: Firm, elastic, creamy-white, maintaining a delightfully crunchy bite even after prolonged cooking. Unmistakable sweet, spicy aroma of pine resin and toasted hazelnuts.
+
+### C. Safety Rules & Preparation Guidelines
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CAULIFLOWER MUSHROOM SAFETY RULE                     │
+│  In European pine forests, there are ZERO POISONOUS MUSHROOMS that      │
+│  produce massive, curly, cauliflower-like ruffled masses at tree bases. │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+1. ⚠️ **Sparassis nemecii / brevipes (Broad-leaved Cauliflower / Breitblättrige Glucke)** — **EDIBLE**:
+   - *Habitat*: Associates with deciduous trees (Oak *Quercus*, Beech *Fagus*) or Silver Fir (*Abies alba*).
+   - *Morphology*: Lobes are noticeably flatter, broader, leaf-like, and less curly. Excellent edible, zero toxicity.
+2. ❌ **Ramaria formosa (Beautiful Coral / Dreifarbige Koralle)** — **POISONOUS (Severe GI distress)**:
+   - *Habitat*: Grows on the ground in deciduous woods (never anchored to pine trunks).
+   - *Form*: Upright, vertical coral-like cylindrical antlers (not flattened curly ruffles) with salmon branches and lemon-yellow tips.
+3. 📌 **Kitchen Preparation Rule**: The dense ruffled frills trap pine needles, sand, and woodland insects. Cut the mushroom into manageable florets and submerge in water to rinse thoroughly before cooking.
+
+---
+
+## 12. GPX 1.1 Embedded Field Guide Formatting
 
 The following structured text block is generated automatically and embedded into each `<desc>` tag within the GPX export file:
 
@@ -260,7 +326,7 @@ The following structured text block is generated automatically and embedded into
 
 ---
 
-## 11. Emergency First-Aid Protocols for Foragers
+## 13. Emergency First-Aid Protocols for Foragers
 
 If accidental ingestion of an unknown or toxic mushroom is suspected:
 

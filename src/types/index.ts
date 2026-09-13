@@ -7,7 +7,9 @@ export type SpeciesId =
   | 'imleria_badia'
   | 'laetiporus_sulphureus'
   | 'macrolepiota_procera'
-  | 'suillus_luteus';
+  | 'suillus_luteus'
+  | 'coprinus_comatus'
+  | 'sparassis_crispa';
 
 export type BasemapId = 'opentopomap' | 'cyclosm' | 'osm';
 

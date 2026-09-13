@@ -249,7 +249,7 @@ export class BakeWorker {
       // ─── STEP 4: Evaluate Suitability Matrices Per-Cell ──────────────────
       job.step = 'computing_suitability';
       job.progressPct = 80;
-      job.message = `Computing 9 species suitability models across ${rows * cols} cells...`;
+      job.message = `Computing 11 species suitability models across ${rows * cols} cells...`;
 
       const todayDate = new Date().toISOString().split('T')[0];
       const cells: BakedCell[] = [];
@@ -311,6 +311,8 @@ export class BakeWorker {
           const laetiporusScore = this.scoringEngine.evaluate('laetiporus_sulphureus', envInputs);
           const macrolepiotaScore = this.scoringEngine.evaluate('macrolepiota_procera', envInputs);
           const suillusScore = this.scoringEngine.evaluate('suillus_luteus', envInputs);
+          const coprinusScore = this.scoringEngine.evaluate('coprinus_comatus', envInputs);
+          const sparassisScore = this.scoringEngine.evaluate('sparassis_crispa', envInputs);
 
           cells.push({
             row: r,
@@ -333,7 +335,9 @@ export class BakeWorker {
             imleria_badiaSuitability: Math.round(imleriaScore.suitabilityScore * 100),
             laetiporus_sulphureusSuitability: Math.round(laetiporusScore.suitabilityScore * 100),
             macrolepiota_proceraSuitability: Math.round(macrolepiotaScore.suitabilityScore * 100),
-            suillus_luteusSuitability: Math.round(suillusScore.suitabilityScore * 100)
+            suillus_luteusSuitability: Math.round(suillusScore.suitabilityScore * 100),
+            coprinus_comatusSuitability: Math.round(coprinusScore.suitabilityScore * 100),
+            sparassis_crispaSuitability: Math.round(sparassisScore.suitabilityScore * 100)
           });
         }
       }

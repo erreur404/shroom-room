@@ -1580,5 +1580,380 @@ export const SPECIES_IDENTIFICATION_DATA: Record<SpeciesId, SpeciesIdentificatio
         }
       }
     ]
+  },
+
+  coprinus_comatus: {
+    speciesId: 'coprinus_comatus',
+    edibility: 'choice',
+    edibilityLabel: {
+      fr: 'Excellent comestible (très jeune)',
+      en: 'Choice Edible (When Young)',
+      de: 'Ausgezeichneter Speisepilz (jung)',
+      ja: '極上食菌 (完全な幼菌時のみ)'
+    },
+    safetySummary: {
+      fr: 'Coprin chevelu. Très facilement reconnaissable à son chapeau blanc cylindrique et écailleux comme une perruque de juge. Comestible de choix UNIQUEMENT lorsque les lamelles sont 100% blanches. Attention : il s’autodétruit en encre noire en quelques heures après la récolte et doit être cuisiné sans attendre.',
+      en: 'Shaggy Mane / Lawyer’s Wig. Highly distinct tall cylindrical white cap covered in soft shaggy scales. Choice gourmet edible ONLY when gills are pure snow-white. Autodigests into black ink within hours of picking and must be cooked immediately.',
+      de: 'Schopftintling / Spargelpilz. Markanter weißer walzenförmiger Hut mit fransig abstehenden Schuppen. Hervorragender Speisepilz, NUR solange die Lamellen rein weiß sind. Zerfließt binnen weniger Stunden nach der Ernte zu schwarzer Tinte und muss sofort zubereitet werden.',
+      ja: 'ササクレヒトヨタケ。裁判官のカツラに例えられる純白の円筒形の傘と、ささくれた羽毛状の鱗片が特徴。ヒダが完全な純白の幼菌時のみ極上の食菌。収穫後わずか数時間で黒いインク状に液化自壊するため、速やかに調理する必要がある。'
+    },
+    sporePrintColor: {
+      fr: 'Noir à brun-noirâtre',
+      en: 'Black to brownish-black',
+      de: 'Schwarz bis braunschwarz',
+      ja: '黒色〜黒褐色'
+    },
+    diagnosticChecklist: [
+      {
+        id: 'coprinus-cap',
+        category: 'chapeau',
+        label: {
+          fr: 'Chapeau cylindrique & mèches',
+          en: 'Cylindrical Cap & Shaggy Scales',
+          de: 'Walzenförmiger Hut & Schuppen',
+          ja: '円筒形の傘とささくれ鱗片'
+        },
+        anatomyTarget: 'chapeau',
+        description: {
+          fr: '5–15 cm de haut, blanc pur, cylindrique ou en fuseau au début, ne s’ouvrant pas en parasol tant qu’il est comestible. Couvert de mèches pelucheuses retroussées.',
+          en: '5–15 cm tall, pure white, strictly cylindrical or thimble-shaped in edible stage. Densely covered in shaggy, upturned woolly scales.',
+          de: '5–15 cm hoch, rein weiß, geschlossen walzenförmig. Mit weichen, abstehenden wolligen Schuppen besetzt.',
+          ja: '高さ5〜15cm、純白で幼菌時は細長い円筒形。傘の表面にはカールしたささくれ状の柔らかい羽毛鱗片が密生する。'
+        }
+      },
+      {
+        id: 'coprinus-gills',
+        category: 'dessous',
+        label: {
+          fr: 'Lamelles libres & blanches',
+          en: 'Free Pure White Gills',
+          de: 'Freie schneeweiße Lamellen',
+          ja: '離生の純白ヒダ'
+        },
+        anatomyTarget: 'lamelles',
+        description: {
+          fr: 'Lamelles très serrées, libres du pied, blanc pur éclatant chez le jeune. Virent au rose puis se liquéfient rapidement en encre noire par la base.',
+          en: 'Extremely crowded, free from stipe, brilliant pure white in youth. Turn pink from bottom edge, then rapidly melt into dripping black liquid ink.',
+          de: 'Sehr dicht stehend, frei, anfangs blendend weiß. Rötend vom Rand her und sich rasch zu flüssiger schwarzer Tinte auflösend.',
+          ja: '極めて密で柄に離生し、幼菌時は鮮やかな純白色。成長すると下端からピンク色に変色し、急速に黒いインク状に自壊溶解（液化）する。'
+        }
+      },
+      {
+        id: 'coprinus-stem',
+        category: 'pied',
+        label: {
+          fr: 'Pied soyeux & anneau mobile',
+          en: 'Silky Stem & Movable Ring',
+          de: 'Seidiger Stiel & verschiebbarer Ring',
+          ja: '絹状の柄と可動性のつば'
+        },
+        anatomyTarget: 'anneau',
+        description: {
+          fr: '10–25 cm, creux, blanc soyeux, s’amincissant vers le haut. Anneau fin, membraneux, blanc et coulissant le long du pied.',
+          en: '10–25 cm, hollow, silky white, tapering upward. Equipped with a small, narrow white membranous ring that slides freely on the stipe.',
+          de: '10–25 cm lang, hohl, seidig glänzend weiß. Mit einem zarten, verschiebbaren weißen Ring versehen.',
+          ja: '長さ10〜25cm、中空で白色絹状の光沢がある。柄には上下に動かすことができる薄い白いつばがある。'
+        }
+      },
+      {
+        id: 'coprinus-flesh',
+        category: 'chair',
+        label: {
+          fr: 'Chair tendre & déliquescence',
+          en: 'Fragile Flesh & Deliquescence',
+          de: 'Zartes Fleisch & Tintenfluss',
+          ja: '脆い肉質と自壊現象'
+        },
+        description: {
+          fr: 'Chair très tendre et fragile dans le chapeau, blanche. Ne doit montrer aucune trace rose ou noire à la récolte. Saveur très fine.',
+          en: 'Very tender and fragile white cap flesh. Must show no traces of pink or black at harvest. Incomparably delicate nutty flavor.',
+          de: 'Sehr zartes, saftiges weißes Hutfleisch. Darf bei der Ernte keinerlei Rosatöne oder Schwärzung aufweisen. Milder Geschmack.',
+          ja: '傘の肉は非常に柔らかく脆い白色。採取時にピンク色や黒ずみの兆候が一切ないこと。極めて繊細で上品な風味。'
+        }
+      },
+      {
+        id: 'coprinus-spores',
+        category: 'spore',
+        label: {
+          fr: 'Sporée',
+          en: 'Spore Print',
+          de: 'Sporenpulver',
+          ja: '胞子紋'
+        },
+        description: {
+          fr: 'Dépôt noir de jais à brun-noirâtre.',
+          en: 'Jet black to brownish-black deposit.',
+          de: 'Tiefschwarz bis braunschwarz.',
+          ja: '漆黒色〜黒褐色。'
+        }
+      }
+    ],
+    lookalikes: [
+      {
+        name: {
+          fr: 'Coprin noir d’encre',
+          en: 'Common Inkcap',
+          de: 'Falten-Tintling',
+          ja: 'ヒトヨタケ'
+        },
+        latinName: 'Coprinopsis atramentaria',
+        edibility: 'toxic',
+        dangerLevel: 'high',
+        description: {
+          fr: 'Toxique si consommé avec de l’alcool (effet antabuse par la coprine). Chapeau lisse ou plissé, gris à brun-cendré, sans mèches laineuses blanches.',
+          en: 'Toxic when consumed with alcohol (antabuse syndrome caused by coprine). Cap is smooth or furrowed, grey to ash-brown, lacking shaggy white scales.',
+          de: 'Giftig in Verbindung mit Alkohol (Coprin-Syndrom). Hut graubraun, gerieft oder glatt, ohne die weißen wolligen Schuppen.',
+          ja: 'アルコール摂取時に有毒（コプリン中毒症状）。傘は灰褐色で放射状の溝があり、白くささくれた羽毛状の鱗片を持たない。'
+        },
+        crucialDifferences: {
+          fr: [
+            'Chapeau gris-cendré ou brun terne (jamais blanc pur éclatant).',
+            'Cuticule lisse ou ridée/côtelée, sans mèches écailleuses blanches retroussées.',
+            'Contient de la coprine : provoque rougeurs, tachycardie et vomissements violents si consommé avec de l’alcool.'
+          ],
+          en: [
+            'Cap is ash-grey to brownish-grey (never brilliant pure snow-white).',
+            'Surface is smooth or longitudinally pleated, without upturned shaggy white scales.',
+            'Contains coprine: causes severe flushing, tachycardia, and vomiting if alcohol is consumed within 48–72 hours.'
+          ],
+          de: [
+            'Hut aschgrau bis graubraun (niemals strahlend schneeweiß).',
+            'Oberfläche glatt oder gefurcht, keine abstehenden wolligen Schuppen.',
+            'Enthält Coprin: löst in Kombination mit Alkohol Herzrasen, Schweißausbrüche und schwere Übelkeit aus.'
+          ],
+          ja: [
+            '傘は灰褐色〜くすんだ灰色（純白ではない）。',
+            '傘の表面は平滑または放射状の溝があり、反り返った白いささくれ鱗片がない。',
+            'コプリンを含み、飲酒前後に食べると激しい顔面紅潮、動悸、嘔吐などの中毒を起こす。'
+          ]
+        }
+      },
+      {
+        name: {
+          fr: 'Lépiote à lames vertes',
+          en: 'False Parasol',
+          de: 'Grünsporschirmling',
+          ja: 'オオシロカラカサタケ'
+        },
+        latinName: 'Chlorophyllum molybdites',
+        edibility: 'toxic',
+        dangerLevel: 'high',
+        description: {
+          fr: 'Toxique gastro-intestinal sévère des pelouses. Chapeau s’aplatissant largement en parasol avec lamelles verdâtres.',
+          en: 'Severe gastrointestinal toxin of grassy lawns. Cap expands into a broad umbrella with greenish gills and spore print.',
+          de: 'Stark magen-darm-giftig auf Rasenflächen. Hut breitet sich schirmartig aus mit im Alter grünlichen Lamellen.',
+          ja: '芝生などに発生する強烈な消化器系毒キノコ。成熟すると傘が大きく平らに開き、ヒダが帯緑色になる。'
+        },
+        crucialDifferences: {
+          fr: [
+            'Chapeau s’étalant largement en parasol plat ou convexe (ne reste pas cylindrique).',
+            'Lamelles et sporée teintées de vert olive chez les spécimens matures.',
+            'Ne s’autodigère pas en encre noire liquide.'
+          ],
+          en: [
+            'Cap expands into a broad flat/convex umbrella (not closed and cylindrical).',
+            'Gills and spore deposit take on an olive-green tint at maturity.',
+            'Does not autodeliquesce into black dripping liquid.'
+          ],
+          de: [
+            'Hut breitet sich flach-konvex aus (bleibt nicht walzenförmig geschlossen).',
+            'Lamellen und Sporenpulver im Alter grünlich gefärbt.',
+            'Zerfließt nicht zu schwarzer Tinte.'
+          ],
+          ja: [
+            '傘が平らまたは饅頭型に広く開き、円筒形を維持しない。',
+            '成熟するとヒダおよび胞子紋がオリーブ緑色を帯びる。',
+            '黒い液体インク状に自壊溶解しない。'
+          ]
+        }
+      }
+    ]
+  },
+
+  sparassis_crispa: {
+    speciesId: 'sparassis_crispa',
+    edibility: 'choice',
+    edibilityLabel: {
+      fr: 'Excellent comestible (Reine des champignons)',
+      en: 'Choice Edible (Gourmet Delicacy)',
+      de: 'Hervorragender Speisepilz (Fette Henne)',
+      ja: '極上食菌 (美味・特有の歯ごたえ)'
+    },
+    safetySummary: {
+      fr: 'Sparassis crépu / Krause Glucke / Morille des pins. Immense champignon globuleux rappelant un chou-fleur ou une éponge marine, poussant au pied des pins. Chair ferme, croquante et très parfumée. Zéro sosie mortel au pied des pins en Europe. Doit être soigneusement nettoyé de ses débris forestiers avant préparation.',
+      en: 'Cauliflower Mushroom. Massive spherical cluster resembling a head of cauliflower or marine sponge, growing at the base of mature pine trees. Crunchy texture and rich nutty flavor. Zero deadly lookalikes under European pines. Requires careful washing to remove trapped pine needles.',
+      de: 'Krause Glucke / Fette Henne. Riesiger blumenkohlartiger Fruchtkörper am Stammgrund alter Kiefern mit unzähligen krausen Lappen. Ausgezeichneter Speisepilz mit nussigem Aroma und knackiger Konsistenz. Keine giftigen Doppelgänger an Kiefern. Muss gründlich von Nadeln und Sand gereinigt werden.',
+      ja: 'ハナビラタケ。マツの木の根元に発生する、カリフラワーや海綿に酷似した巨大な花弁状キノコ。シャキシャキとした抜群の歯ごたえと芳醇な旨味を持つ最高峰の食菌。マツの根元に発生する本種に猛毒の類似種はない。隙間に挟まった松葉や砂を念入りに水洗いすること。'
+    },
+    sporePrintColor: {
+      fr: 'Blanc crème à ocre pâle',
+      en: 'Cream-white to pale ochre',
+      de: 'Cremeweiß bis blassgelb',
+      ja: 'クリーム白色〜淡黄土色'
+    },
+    diagnosticChecklist: [
+      {
+        id: 'sparassis-form',
+        category: 'chapeau',
+        label: {
+          fr: 'Silhouette en chou-fleur & lobes frisés',
+          en: 'Cauliflower Head & Frilly Lobes',
+          de: 'Blumenkohlwuchs & krause Lappen',
+          ja: 'カリフラワー状の花弁とフリル'
+        },
+        anatomyTarget: 'chapeau',
+        description: {
+          fr: '10–40 cm de large, masse globuleuse dense composée de centaines de lobes rubanés, plats, sinueux, ondulés et très frisés à bordure crénelée.',
+          en: '10–40 cm wide, dense spherical mass composed of hundreds of flattened, wavy, curly, ribbon-like ruffled lobes with curled margins.',
+          de: '10–40 cm breit, kugelrund und kompakt, bestehend aus Hunderten flachen, wellig gekräuselten bandartigen Lappen.',
+          ja: '直径10〜40cm、球状で緻密な塊。平たく波打ち、激しくカールした無数の花びら状の帯片が密集する。'
+        }
+      },
+      {
+        id: 'sparassis-color',
+        category: 'chapeau',
+        label: {
+          fr: 'Couleur blanc crème à paille',
+          en: 'Color Cream-White to Straw-Yellow',
+          de: 'Cremeweiß bis strohgelb',
+          ja: 'クリーム白色〜淡麦わら色'
+        },
+        description: {
+          fr: 'Blanc crème à jaunâtre ou café au lait très pâle au frais. L’extrémité des crêtes devient ocre puis brunâtre avec l’âge.',
+          en: 'Creamy-white to pale straw-yellow or pale buff when fresh. Outer ribbon edges turn ochre-brownish in older specimens.',
+          de: 'Frisch cremeweiß bis hell strohgelblich. Die Kanten der Lappen verfärben sich im Alter ockerbraun.',
+          ja: '新鮮時はクリーム白色〜淡い麦わら黄色。古くなると花弁の先端縁が黄土色〜褐色を帯びる。'
+        }
+      },
+      {
+        id: 'sparassis-base',
+        category: 'pied',
+        label: {
+          fr: 'Tronc radicant au pied des pins',
+          en: 'Rooting Trunk at Base of Pines',
+          de: 'Wurzelstrunk am Kiefernstamm',
+          ja: 'マツの根元の太い中心柄'
+        },
+        anatomyTarget: 'pied',
+        description: {
+          fr: 'Pousse directement sur le tronc, le collet ou les racines d’un pin (Pinus). Relié au sol par une base épaisse, coriace et brun-noirâtre.',
+          en: 'Emerges directly at the trunk base or root collar of mature pines (Pinus). Anchored by a thick, tough, dark brown-black central rooting base.',
+          de: 'Wächst unmittelbar am Stammgrund oder über den Wurzeln alter Kiefern. Verankert über einen derben, dunkelbraunen Wurzelstrunk.',
+          ja: 'マツ属樹木の地際、幹の根元や地中の根から直接発生する。基部は太く強靭な暗褐色の根状塊になっている。'
+        }
+      },
+      {
+        id: 'sparassis-flesh',
+        category: 'chair',
+        label: {
+          fr: 'Chair ferme, croquante & aromatique',
+          en: 'Crunchy, Aromatic Firm Flesh',
+          de: 'Knackig-aromatisches Fleisch',
+          ja: 'シャキシャキした肉質と芳香'
+        },
+        description: {
+          fr: 'Chair blanchâtre élastique mais cassante, conservant une texture croquante incomparable après cuisson. Odeur épicée de résine et de noisette.',
+          en: 'Whitish elastic yet brittle flesh that uniquely preserves a delightful crunchy bite after cooking. Spicy fragrance of pine resin and toasted hazelnuts.',
+          de: 'Elastisch-knackiges weißes Fleisch, das beim Kochen seine feste Konsistenz behält. Feiner harzig-würziger Geruch nach Nadelwald.',
+          ja: '弾力がありながらも脆く、加熱調理後も心地よいシャキシャキとした歯ごたえを保持する。松脂とナッツの混ざった爽やかな芳香。'
+        }
+      },
+      {
+        id: 'sparassis-spores',
+        category: 'spore',
+        label: {
+          fr: 'Sporée',
+          en: 'Spore Print',
+          de: 'Sporenpulver',
+          ja: '胞子紋'
+        },
+        description: {
+          fr: 'Dépôt blanc crème à ocre pâle.',
+          en: 'Creamy white to pale ochre print.',
+          de: 'Cremeweiß bis hell ockerfarben.',
+          ja: 'クリーム白色〜淡黄土色。'
+        }
+      }
+    ],
+    lookalikes: [
+      {
+        name: {
+          fr: 'Sparassis à pied court',
+          en: 'Broad-leaved Cauliflower',
+          de: 'Breitblättrige Glucke',
+          ja: 'ハナビラタケ近縁種'
+        },
+        latinName: 'Sparassis nemecii',
+        edibility: 'edible',
+        dangerLevel: 'low',
+        description: {
+          fr: 'Comestible rare. Pousse au pied des sapins (Abies) ou de feuillus (chênes); lobes plus larges, plus étalés et moins ondulés.',
+          en: 'Rare edible. Grows at the base of silver firs (Abies) or oaks (Quercus); frills are noticeably broader, flatter, and less curly.',
+          de: 'Seltener essbarer Doppelgänger an Weißtannen oder Eichen. Blattartige Lappen viel breiter und weniger kraus gefaltet.',
+          ja: '稀に見られる可食種。モミ属やコナラ属の根元に発生し、花弁がより幅広く平らで縮れが少ない。'
+        },
+        crucialDifferences: {
+          fr: [
+            'Pousse sous sapins pectiné (Abies alba) ou feuillus, jamais strictement sous les pins sylvestres.',
+            'Lobes beaucoup plus larges, en forme de feuilles étalées, nettement moins crépus/frisés.',
+            'Également comestible, aucun danger d’intoxication.'
+          ],
+          en: [
+            'Associates with silver fir (Abies) or deciduous hardwoods, not Scots pine.',
+            'Frill lobes are broad, flat, leaf-like, and significantly less ruffled/curly.',
+            'Also edible and harmless.'
+          ],
+          de: [
+            'Wächst bei Weißtannen (Abies) oder Laubbäumen, nicht typisch bei Waldkiefern.',
+            'Lappen viel breiter blattartig, weniger kraus gewellt.',
+            'Ebenfalls essbar und ungiftig.'
+          ],
+          ja: [
+            'アカマツではなくモミ属や広葉樹に発生する。',
+            '花片が幅広く平らな葉状で、細かな縮れが少ない。',
+            '同様に可食であり危険性はない。'
+          ]
+        }
+      },
+      {
+        name: {
+          fr: 'Clavaire jolie',
+          en: 'Beautiful Coral',
+          de: 'Dreifarbige Koralle',
+          ja: 'ハナホウキタケ'
+        },
+        latinName: 'Ramaria formosa',
+        edibility: 'toxic',
+        dangerLevel: 'high',
+        description: {
+          fr: 'Toxique gastro-intestinal. Pousse au sol dans les sous-bois de feuillus (hêtres), branches verticales droites en corail avec pointes citronnées.',
+          en: 'Toxic gastrointestinal mushroom. Grows on the soil in deciduous woods (beech); branches are upright vertical coral-like antlers with lemon-yellow tips.',
+          de: 'Giftig mit schweren Magen-Darm-Beschwerden. Wächst am Erdboden in Laubwäldern; aufrecht korallenförmig verzweigt mit gelben Spitzen.',
+          ja: '有毒（激しい下痢・嘔吐）。ブナなど広葉樹林の地上に生え、サンゴ状に直立した枝分かれを持ち先端が鮮黄色。'
+        },
+        crucialDifferences: {
+          fr: [
+            'Pousse sur la terre ferme en forêt de hêtres/chênes (jamais accroché au pied d’un pin).',
+            'Forme de corail dressé avec des rameaux cylindriques verticaux (aucun lobe aplati frisé en chou-fleur).',
+            'Couleur tricolore : tronc blanchâtre, branches saumon/orangées et pointes jaunes.'
+          ],
+          en: [
+            'Grows on the ground in deciduous beech/oak forests (not anchored to a pine trunk).',
+            'Erect, antler- or coral-like cylindrical branching (no flattened curly cauliflower frills).',
+            'Tricolored: whitish base, salmon-pink branches, and bright lemon-yellow tips.'
+          ],
+          de: [
+            'Wächst am Erdboden im Laubwald (nicht an Kiefernstämmen).',
+            'Aufrechte, ästige Korallenform mit zylindrischen Ästchen (keine flachen krausen Lappen).',
+            'Dreifarbig: weißer Strunk, lachs- bis fleischfarbene Äste, zitronengelbe Spitzen.'
+          ],
+          ja: [
+            'マツの木ではなく、広葉樹林の地上に発生する。',
+            '直立した円筒形のサンゴ状・ホウキ状の枝分かれ（カリフラワー状の平たい縮れではない）。',
+            '根元が白、枝がサーモンピンク、先端が鮮黄色の3色に分かれる。'
+          ]
+        }
+      }
+    ]
   }
 };

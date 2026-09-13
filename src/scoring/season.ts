@@ -16,7 +16,9 @@ export const SPECIES_SEASONS: Record<SpeciesId, SpeciesSeasonWindow> = {
   imleria_badia: { startMonth: 8, startDay: 1, endMonth: 11, endDay: 15 },
   laetiporus_sulphureus: { startMonth: 5, startDay: 15, endMonth: 10, endDay: 15 },
   macrolepiota_procera: { startMonth: 7, startDay: 15, endMonth: 11, endDay: 15 },
-  suillus_luteus: { startMonth: 8, startDay: 1, endMonth: 11, endDay: 15 }
+  suillus_luteus: { startMonth: 8, startDay: 1, endMonth: 11, endDay: 15 },
+  coprinus_comatus: { startMonth: 8, startDay: 15, endMonth: 11, endDay: 15 },
+  sparassis_crispa: { startMonth: 9, startDay: 1, endMonth: 11, endDay: 30 }
 };
 
 /**
@@ -46,6 +48,10 @@ export function isSeasonActive(speciesId: SpeciesId, dateStr: string): boolean {
       return (month === 7 && day >= 15) || month === 8 || month === 9 || month === 10 || (month === 11 && day <= 15);
     case 'suillus_luteus':
       return month === 8 || month === 9 || month === 10 || (month === 11 && day <= 15);
+    case 'coprinus_comatus':
+      return (month === 8 && day >= 15) || month === 9 || month === 10 || (month === 11 && day <= 15);
+    case 'sparassis_crispa':
+      return month === 9 || month === 10 || month === 11;
     default:
       return true;
   }

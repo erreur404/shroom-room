@@ -136,6 +136,36 @@ export const SPECIES_I18N: Record<SpeciesId, SpeciesNameEntry> = {
       de: 'Butterpilz',
       ja: 'ヌメリイグチ'
     }
+  },
+  coprinus_comatus: {
+    latin: 'Coprinus comatus',
+    common: {
+      fr: 'Coprin chevelu',
+      en: 'Shaggy Mane',
+      de: 'Schopftintling',
+      ja: 'ササクレヒトヨタケ'
+    },
+    short: {
+      fr: 'Coprin chevelu',
+      en: 'Shaggy Mane',
+      de: 'Schopftintling',
+      ja: 'ササクレヒトヨタケ'
+    }
+  },
+  sparassis_crispa: {
+    latin: 'Sparassis crispa',
+    common: {
+      fr: 'Sparassis crépu',
+      en: 'Cauliflower Mushroom',
+      de: 'Krause Glucke',
+      ja: 'ハナビラタケ'
+    },
+    short: {
+      fr: 'Sparassis crépu',
+      en: 'Cauliflower',
+      de: 'Krause Glucke',
+      ja: 'ハナビラタケ'
+    }
   }
 };
 

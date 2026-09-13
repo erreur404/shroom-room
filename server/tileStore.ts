@@ -90,6 +90,8 @@ export class TileStore {
         const avgLaetiporus = calcAvg('laetiporus_sulphureusSuitability');
         const avgMacrolepiota = calcAvg('macrolepiota_proceraSuitability');
         const avgSuillus = calcAvg('suillus_luteusSuitability');
+        const avgCoprinus = calcAvg('coprinus_comatusSuitability');
+        const avgSparassis = calcAvg('sparassis_crispaSuitability');
 
         fusedCells.push({
           row: fRow,
@@ -105,7 +107,9 @@ export class TileStore {
           ...(avgImleria !== undefined ? { imleria_badiaSuitability: avgImleria } : {}),
           ...(avgLaetiporus !== undefined ? { laetiporus_sulphureusSuitability: avgLaetiporus } : {}),
           ...(avgMacrolepiota !== undefined ? { macrolepiota_proceraSuitability: avgMacrolepiota } : {}),
-          ...(avgSuillus !== undefined ? { suillus_luteusSuitability: avgSuillus } : {})
+          ...(avgSuillus !== undefined ? { suillus_luteusSuitability: avgSuillus } : {}),
+          ...(avgCoprinus !== undefined ? { coprinus_comatusSuitability: avgCoprinus } : {}),
+          ...(avgSparassis !== undefined ? { sparassis_crispaSuitability: avgSparassis } : {})
         });
       }
     }

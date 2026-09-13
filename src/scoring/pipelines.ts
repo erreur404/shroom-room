@@ -343,6 +343,85 @@ export class SuillusLuteusSuitabilityPipeline implements ISuitabilityPipeline {
   }
 }
 
+/**
+ * Coprinus comatus (Shaggy Mane / Coprin chevelu / Schopftintling) Suitability Pipeline
+ * - Saprotrophic: Grassy woodland borders, clearings, path edges (distToHost <= 35m)
+ * - Optimal pH: 6.0 - 7.8 (center 6.8, sigma 0.7)
+ * - Nitrophilic: Requires rich organic matter / humus (socDgKg >= 220)
+ * - Soil texture: Loamy, well-aerated soil (clayPct <= 35)
+ */
+export class CoprinusComatusSuitabilityPipeline implements ISuitabilityPipeline {
+  name = 'coprinus-comatus-suitability-v1';
+  speciesId: SpeciesId = 'coprinus_comatus';
+
+  computeSuitability(env: EnvironmentalInputs) {
+    const isForestOrEdge = env.hostTreeGenus !== 7 && env.distToHostMeters <= 35;
+    const habitatScore = isForestOrEdge ? 1.0 : 0.0;
+
+    if (habitatScore === 0.0) {
+      return { suitabilityScore: 0.0, pHScore: 0.0, hostTreeScore: 0.0 };
+    }
+
+    // Gaussian pH curve centered at 6.8, sigma 0.7
+    const pHScore = Math.exp(-Math.pow(env.soilPH - 6.8, 2) / (2 * 0.49));
+
+    // High organic matter / humus preference (nitrophilic saprotroph)
+    const socScore = (env.socDgKg >= 220) ? 1.0 : 0.6;
+
+    // Soil texture factor (prefers moist loamy ground)
+    const textureScore = (env.clayPct <= 35 && env.sandPct >= 15) ? 1.0 : 0.7;
+    const topoScore = 1.0;
+
+    const suitabilityScore = habitatScore * (0.50 * pHScore + 0.30 * socScore + 0.10 * textureScore + 0.10 * topoScore);
+    return {
+      suitabilityScore: Math.min(1.0, Math.max(0.0, suitabilityScore)),
+      pHScore,
+      hostTreeScore: habitatScore
+    };
+  }
+}
+
+/**
+ * Sparassis crispa (Cauliflower Mushroom / Krause Glucke / Sparassis crépu) Suitability Pipeline
+ * - Parasitic / Lignicolous brown-rot on conifer roots/bases, predominantly Pinus (2), occasionally Picea (1), Larix (0)
+ * - Strict 15m trunk proximity gate
+ * - Acidophilic: Optimal pH 4.0 - 5.5 (center 4.7, sigma 0.6)
+ * - Sandy podzols and well-drained pine forest floor
+ */
+export class SparassisCrispaSuitabilityPipeline implements ISuitabilityPipeline {
+  name = 'sparassis-crispa-suitability-v1';
+  speciesId: SpeciesId = 'sparassis_crispa';
+
+  computeSuitability(env: EnvironmentalInputs) {
+    let hostWeight = 0.0;
+    if (env.hostTreeGenus === 2) {
+      hostWeight = 1.0;
+    } else if ([0, 1].includes(env.hostTreeGenus)) {
+      hostWeight = 0.75;
+    }
+
+    const hostTreeScore = (hostWeight > 0.0 && env.distToHostMeters <= 15) ? hostWeight : 0.0;
+
+    if (hostTreeScore === 0.0) {
+      return { suitabilityScore: 0.0, pHScore: 0.0, hostTreeScore: 0.0 };
+    }
+
+    // Gaussian pH penalty curve centered at 4.7, sigma 0.6
+    const pHScore = Math.exp(-Math.pow(env.soilPH - 4.7, 2) / (2 * 0.36));
+
+    // Soil texture factor (prefers sandy, well-draining pine soils)
+    const textureScore = (env.sandPct >= 25 && env.clayPct <= 35) ? 1.0 : 0.6;
+    const topoScore = 1.0;
+
+    const suitabilityScore = hostTreeScore * (0.65 * pHScore + 0.20 * textureScore + 0.15 * topoScore);
+    return {
+      suitabilityScore: Math.min(1.0, Math.max(0.0, suitabilityScore)),
+      pHScore,
+      hostTreeScore
+    };
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Concrete Probability Pipelines
 // ─────────────────────────────────────────────────────────────────────────────
@@ -544,6 +623,14 @@ export class ScoringEngine {
     // 9. Suillus luteus
     this.suitabilityPipelines.set('suillus_luteus', new SuillusLuteusSuitabilityPipeline());
     this.probabilityPipelines.set('suillus_luteus', new RainColdShockTriggerPipeline());
+
+    // 10. Coprinus comatus
+    this.suitabilityPipelines.set('coprinus_comatus', new CoprinusComatusSuitabilityPipeline());
+    this.probabilityPipelines.set('coprinus_comatus', new ParasolWeatherTriggerPipeline());
+
+    // 11. Sparassis crispa
+    this.suitabilityPipelines.set('sparassis_crispa', new SparassisCrispaSuitabilityPipeline());
+    this.probabilityPipelines.set('sparassis_crispa', new HydnumWeatherTriggerPipeline());
   }
 
   isSeasonActive(speciesId: SpeciesId, dateStr: string): boolean {

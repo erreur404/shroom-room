@@ -26,6 +26,8 @@ export interface BakedCell {
   laetiporus_sulphureusSuitability?: number;      // 0..100
   macrolepiota_proceraSuitability?: number;       // 0..100
   suillus_luteusSuitability?: number;             // 0..100
+  coprinus_comatusSuitability?: number;           // 0..100
+  sparassis_crispaSuitability?: number;           // 0..100
   treeSource?: 'gbif' | 'osm' | 'fallback';
 }
 
@@ -60,6 +62,8 @@ export interface BakedTileData {
       laetiporus_sulphureusSuitability?: number;
       macrolepiota_proceraSuitability?: number;
       suillus_luteusSuitability?: number;
+      coprinus_comatusSuitability?: number;
+      sparassis_crispaSuitability?: number;
     }[];
   };
   bakedAt: string;

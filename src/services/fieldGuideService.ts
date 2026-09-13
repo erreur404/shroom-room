@@ -493,6 +493,124 @@ export const FIELD_GUIDE_DATA: Record<SpeciesId, SpeciesFieldGuideContent> = {
       de: 'FAUSTREGEL: Schleimiger Röhrenpilz unter Kiefern mit Stielring = essbarer Butterpilz (Huthaut abziehen).',
       ja: '安全の鉄則：マツの木の下に生える、つばと黄色い管孔を持つぬめり気のあるイグチは安全なヌメリイグチです（表皮を剥いて調理）。'
     }
+  },
+
+  coprinus_comatus: {
+    idKeys: {
+      fr: [
+        'Chapeau : Cylindrique, en forme de fuseau ou de dé à coudre fermé au début (ne s’étale pas en parapluie tant qu’il est comestible), blanc pur, recouvert d’écailles/mèches laineuses retroussées.',
+        'Lamelles : Extrêmement serrées, libres, blanc neige pur chez les jeunes spécimens. Virent au rose par la base puis se liquéfient rapidement en encre noire (autodélicquescence).',
+        'Pied & Anneau : Long, mince, creux, blanc soyeux, s’arrachant facilement du chapeau. Orné d’un petit anneau blanc membraneux, mobile (coulissant sur le pied).',
+        'Chair : Blanche, mince et tendre dans le chapeau, filandreuse dans le pied. Odeur fongique agréable et douce saveur de noisette.'
+      ],
+      en: [
+        'Cap: Tall cylindrical, thimble- or bullet-shaped when young (never flattened while edible), snow-white, densely covered in shaggy, curled woolly scales.',
+        'Gills: Extremely crowded, free from stem, pure chalk-white in youth. Turn pink from the bottom rim upward before dissolving into dripping black ink.',
+        'Stem & Ring: Tall, slender, hollow, silky-white, easily detaching from cap. Features a narrow, movable membranous white ring that slides along the stipe.',
+        'Flesh: Soft, fragile white flesh in the cap, fibrous in stem. Faint pleasant mushroom scent and delicate nutty taste.'
+      ],
+      de: [
+        'Hut: Zylindrisch-walzenförmig, wie eine weiße Spargelstange geschlossen, schneeweiß mit charakteristischen abstehenden wolligen Schuppen bedeckt.',
+        'Lamellen: Extrem dicht stehend, frei, jung rein weiß. Verfärben sich vom Hutrand her rosa und zerfließen rasch zu schwarzer Tinte (Autolyse).',
+        'Stiel & Ring: Schlank, hohl, seidig-weiß, leicht aus dem Hut lösbar. Trägt einen kleinen, verschiebbaren weißen Ring.',
+        'Fleisch: Zart, weiß und weich im Hut, faserig im Stiel. Angenehmer milder Geschmack und feiner Pilzgeruch.'
+      ],
+      ja: [
+        '傘：幼菌時は円筒形〜紡錘形で（可食時は傘が開かない）、純白の地に反り返ったささくれ状の繊維鱗片が密生する。',
+        'ヒダ：非常に密で柄に離生し、幼菌時は完全な純白色。成熟すると傘の縁からピンク色に変色し、急速に黒いインク状に自壊溶解（液化）する。',
+        '柄とつば：細長く中空で白色絹状。傘から容易に外れ、柄には上下に動かせる小さな可動性の白いつばがある。',
+        '肉：傘の肉は非常に柔らかく脆い白色。繊細で上品なキノコの香りとナッツ様の甘みがある。'
+      ]
+    },
+    lookalikes: {
+      fr: [
+        '❌ Coprinopsis atramentaria (Coprin noir d’encre) - TOXIQUE AVEC ALCOOL : Chapeau gris-brunâtre, lisse ou plissé (dépourvu de mèches écailleuses blanches retroussées). Contient de la coprine provoquant un violent syndrome antabuse avec l’alcool.',
+        '❌ Chlorophyllum molybdites (Lépiote à lames vertes) - TOXIQUE : Chapeau s’ouvrant largement en parasol, lamelles et sporée verdâtres, pousse dans les pelouses chaudes.',
+        '⚠️ Règle de fraîcheur : Se consomme UNIQUEMENT lorsque les lamelles sont 100% blanches. Cuisiner immédiatement (dans les 2 à 4 heures).'
+      ],
+      en: [
+        '❌ Coprinopsis atramentaria (Common Inkcap) - TOXIC WITH ALCOHOL: Smooth or furrowed grey-brown cap (lacks shaggy white upturned scales). Contains coprine; triggers severe vomiting and flushing if alcohol is consumed within 48h.',
+        '❌ Chlorophyllum molybdites (False Parasol) - POISONOUS: Cap opens into wide umbrella, green gills and greenish spore print.',
+        '⚠️ Freshness Notice: Must ONLY be eaten when gills are 100% snow-white. Cook immediately (within 2 to 4 hours of foraging).'
+      ],
+      de: [
+        '❌ Coprinopsis atramentaria (Falten-Tintling) - GIFTIG MIT ALKOHOL: Graubrauner, geriefter Hut ohne wollige weiße Schuppen. Enthält Coprin (führt bei Alkoholgenuss zu schwerem Antabus-Syndrom).',
+        '❌ Chlorophyllum molybdites (Grünsporschirmling) - GIFTIG: Breiter, flacher Hut mit grünlichen Lamellen und grüner Sporenpulverfarbe.',
+        '⚠️ Frische-Hinweis: Nur sammeln, solange die Lamellen makellos schneeweiß sind. Binnen 2 bis 4 Stunden zubereiten.'
+      ],
+      ja: [
+        '❌ ヒトヨタケ (Coprinopsis atramentaria) - アルコール併用で有毒：灰褐色の傘で溝状の線があり、ささくれ状の白鱗片を持たない。コプリンを含み、酒類と一緒に摂取すると激しい悪酔い中毒症状を引き起こす。',
+        '❌ オオシロカラカサタケ (Chlorophyllum molybdites) - 毒：傘が平らに開き、ヒダが帯緑色で緑色の胞子紋を持つ。',
+        '⚠️ 鮮度の注意：ヒダが100%純白の幼菌のみ採取してください。採取後は2〜4時間以内に直ちに加熱調理すること。'
+      ]
+    },
+    ruleOfThumb: {
+      fr: 'RÈGLE D’OR : Ne ramassez que des spécimens cylindriques fermés aux lamelles strictement blanches. Dès que le bas du chapeau rosit ou goutte noir, ne le consommez pas.',
+      en: 'RULE OF THUMB: Only forage closed cylindrical specimens with 100% pure snow-white gills. Never consume if gills turn pink or liquefy into ink.',
+      de: 'FAUSTREGEL: Nur junge, walzenförmige Exemplare mit rein schneeweißen Lamellen verwerten. Sobald der Hutrand rosa wird oder tropft, nicht mehr essen.',
+      ja: '安全の鉄則：ヒダが完全に純白の円筒形の幼菌のみを採取してください。傘の縁がピンク色に変色したりインク状に垂れ始めたものは絶対に口にしないでください。'
+    }
+  },
+
+  sparassis_crispa: {
+    idKeys: {
+      fr: [
+        'Silhouette : Volumineuse masse globuleuse ou arrondie (10–40 cm, jusqu’à plusieurs kg), évoquant un chou-fleur ou une éponge marine, composée d’une multitude de lobes ondulés et frisés.',
+        'Couleur : Blanc crème à jaune paille ou ocre pâle à l’état frais. L’extrémité des fronces brunit légèrement avec l’âge.',
+        'Base & Insertion : Fixé au sol par un gros tronc/pied central coriace, brun-noirâtre, enraciné directement sur le collet ou les racines d’un résineux.',
+        'Chair : Élastique, ferme et croquante, crème. Odeur aromatique intense très agréable (arôme de noisette et résine de pin) et saveur douce.'
+      ],
+      en: [
+        'Form: Large, spherical or rounded mass (10–40 cm wide, up to several kg) resembling a head of cauliflower or bath sponge, packed with convoluted wavy, curly frills.',
+        'Color: Creamy white to pale straw-yellow or ochre when fresh. Frill tips become brownish with age.',
+        'Base: Anchored by a thick, rooting, tough, dark brown-black central base rooted into conifer roots or the base of a tree trunk.',
+        'Flesh: Brittle yet elastic, firm and crunchy, creamy-white. Pronounced pleasant aroma of hazelnuts and pine needles, delicious mild taste.'
+      ],
+      de: [
+        'Wuchsform: Großer, kugeliger Fruchtkörper (10–40 cm breit, oft mehrere kg schwer), der an einen Blumenkohl oder Badeschwamm erinnert und aus zahllosen krausen, gewellten Lappen besteht.',
+        'Farbe: Cremeweiß bis hell strohgelb oder ockerfarben. Die Ränder der Krause bräunen im Alter.',
+        'Basis: Sitzt mit einem dicken, zähen, dunkelbraunen Wurzelstrunk direkt am Wurzelstock oder Stammgrund von Nadelbäumen.',
+        'Fleisch: Elastisch-brüchig, fest und knackig, weißlich. Würziger, nussig-harziger Duft und milder, ausgezeichneter Geschmack.'
+      ],
+      ja: [
+        '形態：大型の球状塊（直径10〜40cm、数kgに達する）、カリフラワーや海綿に酷似し、波打ちカールした無数の花びら状の小片からなる。',
+        '色：新鮮時はクリーム白色〜淡い麦わら黄色〜黄土色。古くなると花弁の先端が褐色を帯びる。',
+        '根元：針葉樹の根元や地中の根に直接固着する、太く強靭な暗褐色の根状塊（中心柄）を持つ。',
+        '肉：弾力がありながらも脆くシャキシャキとした食感、乳白色。松脂とナッツの混ざった非常に心地よい芳香と上品な旨味がある。'
+      ]
+    },
+    lookalikes: {
+      fr: [
+        '✅ ZÉRO SOSIE MORTEL AU PIED DES PINS : Aucun champignon mortel en forme de chou-fleur ne pousse sur les racines de pin.',
+        '⚠️ Sparassis nemecii / brevipes (Sparassis à pied court) - COMESTIBLE : Pousse sous les feuillus (chênes) ou le sapin pectiné ; lobes plus larges et moins frisés.',
+        '❌ Ramaria formosa (Clavaire jolie) - TOXIQUE : Ramifications coralliennes dressées verticales (non frisées en chou-fleur), pousse au sol dans les feuillus, extrémités citronnées.',
+        '📌 Nettoyage : Tremper et nettoyer soigneusement entre les anfractuosités pour éliminer les aiguilles de pin, débris de sable et insectes.'
+      ],
+      en: [
+        '✅ ZERO DEADLY LOOKALIKES UNDER PINES: No deadly cauliflower-like fungi grow at the base of pine trees in Europe.',
+        '⚠️ Sparassis nemecii / brevipes (Broad-leaved Cauliflower) - EDIBLE: Grows under hardwoods (oak) or silver fir; has flatter, broader lobes.',
+        '❌ Ramaria formosa (Beautiful Coral) - POISONOUS: Upright vertical coral branches (not curly ruffled lobes) on deciduous soil, pinkish-salmon branches with yellow tips.',
+        '📌 Cleaning Tip: Soak and thoroughly rinse between all the crevices to remove trapped pine needles, forest sand, and small insects.'
+      ],
+      de: [
+        '✅ KEINE TÖDLICHEN VERWECHSLUNGEN BEI KIEFERN: An Kiefernstämmen gibt es keine giftigen Doppelgänger dieser Wuchsform.',
+        '⚠️ Sparassis nemecii / brevipes (Breitblättrige Glucke) - ESSBAR: Wächst bei Laubbäumen (Eichen) oder Weißtannen; Lappen breiter und weniger kraus.',
+        '❌ Ramaria formosa (Dreifarbige Koralle) - GIFTIG: Aufrecht stehende Korallenästchen (keine krausen Lappen), wächst am Waldboden im Laubwald.',
+        '📌 Küchenreinigung: Gründlich in Wasser spülen und zerteilen, um eingewachsene Kiefernnadeln, Sand und Insekten zu entfernen.'
+      ],
+      ja: [
+        '✅ マツの根元での猛毒菌混同なし：ヨーロッパおよび日本において、マツの根元に発生する本種に類似した猛毒キノコはありません。',
+        '⚠️ ハナビラタケ近縁種 (Sparassis nemecii) - 可食：広葉樹やモミ属の根元に発生し、花弁が平たく広い。',
+        '❌ ハナホウキタケ (Ramaria formosa) - 有毒：サンゴ状に直立して枝分かれし（カールした花弁状ではない）、広葉樹の地上に生える。',
+        '📌 下処理のコツ：ひだの隙間に松葉や砂粒、小さな昆虫が入り込みやすいため、小房に分けて水の中で丁寧に洗い流してください。'
+      ]
+    },
+    ruleOfThumb: {
+      fr: 'RÈGLE D’OR : Énorme masse frisée en forme de chou-fleur au pied d’un pin = Sparassis crépu, délicieux une fois soigneusement lavé.',
+      en: 'RULE OF THUMB: Large cauliflower-like ruffled cluster at the base of a pine trunk = delicious Cauliflower Mushroom (wash thoroughly).',
+      de: 'FAUSTREGEL: Riesiger blumenkohlartiger krauser Pilz am Stammgrund einer Kiefer = köstliche Krause Glucke (gründlich waschen).',
+      ja: '安全の鉄則：マツの木の根元に生えるカリフラワー状の巨大な縮れキノコは極上のハナビラタケです（隙間の松葉や砂をよく洗って調理）。'
+    }
   }
 };
 

@@ -91,6 +91,24 @@ export const SPECIES_DETAILS: Record<SpeciesId, {
     optimalPH: 'pH 4.2 – 6.0 (Sandy pine litter)',
     seasonWindow: 'August 1 – November 15 (Autumn Peak)',
     badgeColor: '#b45309'
+  },
+  coprinus_comatus: {
+    name: 'Coprinus comatus',
+    commonName: 'Shaggy Mane / Coprin chevelu / Schopftintling',
+    guild: 'Saprotrophic (Ruderal / Nitrophilic Humus)',
+    symbionts: ['Grassy Forest Margins', 'Meadows & Path Edges', 'Nitrogen-rich Humus & Lawns'],
+    optimalPH: 'pH 6.0 – 7.8 (Sub-neutral to calcareous nitrophilic soils)',
+    seasonWindow: 'August 15 – November 15 (Autumn Peak)',
+    badgeColor: '#64748b'
+  },
+  sparassis_crispa: {
+    name: 'Sparassis crispa',
+    commonName: 'Cauliflower Mushroom / Sparassis crépu / Krause Glucke',
+    guild: 'Lignicolous / Parasitic Brown-rot Saprotroph',
+    symbionts: ['Pine (Pinus)', 'Spruce (Picea)', 'Conifer Stumps & Root Collars'],
+    optimalPH: 'pH 4.0 – 5.5 (Acidic sandy pine soils)',
+    seasonWindow: 'September 1 – November 30 (Autumn Peak)',
+    badgeColor: '#ca8a04'
   }
 };
 
